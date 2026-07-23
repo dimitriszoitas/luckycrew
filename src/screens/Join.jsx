@@ -1,5 +1,5 @@
 import React from 'react'
-import { useStore, nav, toast, isMemberOf, ongoingForCrew, lotteryFilled } from '../store.jsx'
+import { useStore, nav, toast, isMemberOf, ongoingForCrew, potTotal } from '../store.jsx'
 import { GAME, fmtEUR, fmtEUR2 } from '../game.js'
 import { FacePile, Countdown } from '../ui.jsx'
 
@@ -33,7 +33,7 @@ export default function Join({ crewId, preview }) {
           <div className="hero-kicker" style={{ justifyContent: 'center' }}><span className="dot" /> You're invited</div>
           <h1 style={{ fontSize: 30 }}>{crew.name}</h1>
           <p style={{ color: 'var(--text-dim)', marginTop: 6 }}>
-            {captain?.name || 'The captain'} invited you to join the crew and chase tonight's <b style={{ color: 'var(--gold)' }}>{fmtEUR(GAME.jackpot)}</b> {GAME.name} jackpot together.
+            {captain?.name || 'The captain'} invited you to join the crew and chase tonight's <b style={{ color: 'var(--money)' }}>{fmtEUR(GAME.jackpot)}</b> {GAME.name} jackpot together.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', margin: '18px 0 6px' }}>
             <FacePile members={crew.members} max={7} />
@@ -45,8 +45,8 @@ export default function Join({ crewId, preview }) {
           {ongoing ? (
             <div className="stat-tiles" style={{ marginBottom: 16 }}>
               <div className="stat-tile"><div className="k">Ongoing entry</div><div className="v">Draw #{ongoing.drawNo}</div></div>
-              <div className="stat-tile"><div className="k">Share price</div><div className="v">{fmtEUR2(ongoing.sharePrice)}</div></div>
-              <div className="stat-tile"><div className="k">Pot so far</div><div className="v">{fmtEUR2(lotteryFilled(ongoing) * ongoing.sharePrice)}</div></div>
+              <div className="stat-tile"><div className="k">Pot so far</div><div className="v">{fmtEUR2(potTotal(ongoing))}</div></div>
+              <div className="stat-tile"><div className="k">Tickets</div><div className="v">{ongoing.tickets.length} 🎫</div></div>
             </div>
           ) : (
             <p className="crew-meta" style={{ textAlign: 'center', marginBottom: 16 }}>

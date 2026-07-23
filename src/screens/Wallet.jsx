@@ -23,10 +23,10 @@ export default function Wallet() {
       </div>
 
       <div className="card card-pad">
-        <div className="section-title">📒 Movements</div>
+        <h2 className="section-title"><span aria-hidden="true">📒</span> Movements</h2>
         {state.wallet.txns.map(x => (
           <div className="row" key={x.id}>
-            <div className="member-avatar" style={{ fontSize: 17 }}>{x.amount > 0 ? '⬇️' : '⬆️'}</div>
+            <div className="member-avatar" style={{ fontSize: 17 }} aria-hidden="true">{x.amount > 0 ? '⬇️' : '⬆️'}</div>
             <div className="grow">
               <div className="row-title">{x.label}</div>
               <div className="row-sub">{when(x.t)}</div>

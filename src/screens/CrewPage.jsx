@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useStore, nav, toast, ongoingForCrew, nextDrawFor, crewLuck } from '../store.jsx'
-import { GAME, fmtEUR2 } from '../game.js'
-import { Modal, FakeQR, FacePile, CompletedLotteryCard, LotteryCard, LuckBadge } from '../ui.jsx'
+import { FakeQR, FacePile, CompletedLotteryCard, LotteryCard, LuckBadge } from '../ui.jsx'
 
 const timeAgo = t => {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000))
@@ -16,7 +15,6 @@ const timeAgo = t => {
 export default function CrewPage({ crewId, justCreated }) {
   const { state, dispatch } = useStore()
   const crew = state.crews.find(c => c.id === crewId)
-  const [showEnter, setShowEnter] = useState(false)
   if (!crew) return null
 
   const isCaptain = crew.captainId === 'you'
@@ -49,7 +47,7 @@ export default function CrewPage({ crewId, justCreated }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
           {!ongoing && isCaptain && (
-            <button className="btn btn-gold gold-pulse" onClick={() => setShowEnter(true)}>🎟️ Enter draw #{nextDraw}</button>
+            <button className="btn btn-gold gold-pulse" onClick={() => { dispatch({ type: 'enterLottery', crewId: crew.id, drawNo: nextDraw }); toast(dispatch, `${crew.name} entered draw #${nextDraw}. Chip in!`, '🎟️') }}>🎟️ Enter draw #{nextDraw}</button>
           )}
           {!ongoing && !isCaptain && (
             <span className="crew-meta" style={{ alignSelf: 'center' }}>The captain opens draw entries. You'll see them here.</span>
@@ -69,7 +67,7 @@ export default function CrewPage({ crewId, justCreated }) {
 
       {ongoing && (
         <>
-          <div className="sub-heading">● Ongoing entry</div>
+          <h2 className="sub-heading">● Ongoing entry</h2>
           <div style={{ marginBottom: 22 }}><LotteryCard lottery={ongoing} /></div>
         </>
       )}
@@ -77,7 +75,7 @@ export default function CrewPage({ crewId, justCreated }) {
       <div className="grid-2" style={{ marginBottom: 18 }}>
         {/* Members */}
         <div className="card card-pad">
-          <div className="section-title" style={{ fontSize: 18 }}>👥 Members</div>
+          <h2 className="section-title" style={{ fontSize: 18 }}><span aria-hidden="true">👥</span> Members</h2>
           {crew.members.map(m => (
             <div className="row" key={m.id}>
               <div className="member-avatar">{m.avatar}</div>
@@ -95,14 +93,13 @@ export default function CrewPage({ crewId, justCreated }) {
 
       {history.length > 0 && (
         <>
-          <div className="sub-heading">✓ Past draws together</div>
+          <h2 className="sub-heading">✓ Past draws together</h2>
           <div style={{ display: 'grid', gap: 10, marginBottom: 26 }}>
             {history.map(l => <CompletedLotteryCard key={l.id} lottery={l} />)}
           </div>
         </>
       )}
 
-      {showEnter && <EnterLotteryModal crew={crew} drawNo={nextDraw} onClose={() => setShowEnter(false)} />}
     </div>
   )
 }
@@ -114,7 +111,7 @@ function InviteBlock({ crew }) {
   const copy = () => { try { navigator.clipboard?.writeText(`https://${link}`) } catch {} ; toast(dispatch, 'Invite link copied', '🔗') }
   return (
     <div className="card card-pad">
-      <div className="section-title" style={{ fontSize: 18 }}>📨 Invite to the crew</div>
+      <h2 className="section-title" style={{ fontSize: 18 }}><span aria-hidden="true">📨</span> Invite to the crew</h2>
       <div className="input" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 14 }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link}</span>
       </div>
@@ -128,47 +125,5 @@ function InviteBlock({ crew }) {
         ✨ Simulate a friend joining
       </button>
     </div>
-  )
-}
-
-// Captain sets the pot rules per draw entry. The crew itself stays rule-free.
-function EnterLotteryModal({ crew, drawNo, onClose }) {
-  const { dispatch } = useStore()
-  const [rules, setRules] = useState({ sharePrice: 2.5, targetShares: 20, maxPerMember: 4 })
-  const set = patch => setRules(r => ({ ...r, ...patch }))
-  const potMax = rules.sharePrice * rules.targetShares
-  const enter = () => {
-    dispatch({ type: 'enterLottery', crewId: crew.id, drawNo, rules })
-    toast(dispatch, `${crew.name} entered draw #${drawNo}. Fill the pot!`, '🎟️')
-  }
-  return (
-    <Modal onClose={onClose} width={520}>
-      <h3 className="display">Enter draw #{drawNo} with {crew.emoji} {crew.name}</h3>
-      <p className="sub">Set the pot rules for this draw. Members then buy shares and the pot buys tickets.</p>
-      <div className="field">
-        <label>Share price</label>
-        <div className="seg">
-          {[1, 2, 2.5, 5].map(p => <button key={p} className={rules.sharePrice === p ? 'on' : ''} onClick={() => set({ sharePrice: p })}>€{p.toFixed(2)}</button>)}
-        </div>
-      </div>
-      <div className="field">
-        <label>Target shares (pot size)</label>
-        <div className="seg">
-          {[10, 20, 40, 50].map(p => <button key={p} className={rules.targetShares === p ? 'on' : ''} onClick={() => set({ targetShares: p })}>{p}</button>)}
-        </div>
-      </div>
-      <div className="field">
-        <label>Max shares per member, keeps it fair</label>
-        <div className="seg">
-          {[1, 2, 4, 10].map(p => <button key={p} className={rules.maxPerMember === p ? 'on' : ''} onClick={() => set({ maxPerMember: p })}>{p === 1 ? '1 · equal split' : p}</button>)}
-        </div>
-      </div>
-      <div className="stat-tiles" style={{ margin: '18px 0' }}>
-        <div className="stat-tile"><div className="k">Pot at full</div><div className="v">{fmtEUR2(potMax)}</div></div>
-        <div className="stat-tile"><div className="k">Tickets at full</div><div className="v">{Math.floor(potMax / GAME.ticketPrice)} 🎫</div></div>
-        <div className="stat-tile"><div className="k">Game</div><div className="v">{GAME.name}</div></div>
-      </div>
-      <button className="btn btn-gold btn-lg" style={{ width: '100%' }} onClick={enter}>🎟️ Open entry for draw #{drawNo}</button>
-    </Modal>
   )
 }

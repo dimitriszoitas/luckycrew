@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { useStore, nav, toast, crewById, lotteryFilled, potBalance } from '../store.jsx'
+import { useStore, nav, toast, crewById, potTotal, potBalance } from '../store.jsx'
 import { GAME, quickPick, fmtEUR2, fmtPct } from '../game.js'
-import { Countdown, Balls, StatusChip, Modal } from '../ui.jsx'
+import { AnimatedNumber, Countdown, Balls, StatusChip, Modal, StakeInput } from '../ui.jsx'
 
 const timeAgo = t => {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000))
@@ -12,7 +12,8 @@ const timeAgo = t => {
   return `${Math.floor(h / 24)}d ago`
 }
 
-// One crew's entry in one draw: pot, shares, tickets, ledger.
+// One crew's entry in one draw: pot, contributions, tickets, ledger.
+// No shares: each member's stake defines their cut.
 export default function LotteryPage({ lotteryId }) {
   const { state, dispatch } = useStore()
   const lottery = state.lotteries.find(l => l.id === lotteryId)
@@ -22,14 +23,15 @@ export default function LotteryPage({ lotteryId }) {
 
   if (!lottery) return null
   const crew = crewById(state, lottery.crewId)
-  const filled = lotteryFilled(lottery)
-  const pot = potBalance(lottery)
-  const yourShares = lottery.shares.you || 0
-  const yourPct = filled ? yourShares / filled : 0
+  const pot = potTotal(lottery)
+  const unspent = potBalance(lottery)
+  const yourStake = lottery.contributions.you || 0
+  const yourPct = pot ? yourStake / pot : 0
   const isCaptain = crew.captainId === 'you'
-  const affordable = Math.floor(pot / GAME.ticketPrice)
+  const affordable = Math.floor(unspent / GAME.ticketPrice)
   const open = lottery.status === 'open'
-  const contributors = crew.members.filter(m => (lottery.shares[m.id] || 0) > 0)
+  const contributors = crew.members.filter(m => (lottery.contributions[m.id] || 0) > 0)
+  const lastChip = [...lottery.ledger].reverse().find(e => e.icon === '💰')
 
   return (
     <div className="container" style={{ maxWidth: 880 }}>
@@ -46,7 +48,7 @@ export default function LotteryPage({ lotteryId }) {
               {isCaptain && <span className="chip captain">⭐ You're captain</span>}
             </div>
             <div className="crew-meta" style={{ marginTop: 3 }}>
-              {GAME.name} · paid by <b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b> · €{lottery.sharePrice.toFixed(2)}/share · max {lottery.maxPerMember}/member
+              {GAME.name} · Weekly Mega · <b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -58,20 +60,28 @@ export default function LotteryPage({ lotteryId }) {
         <div style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 21 }}>
-              {filled}<span style={{ color: 'var(--text-faint)' }}>/{lottery.targetShares}</span> shares
+              <AnimatedNumber value={pot} format={v => fmtEUR2(v)} /><span style={{ color: 'var(--text-faint)', fontSize: 15 }}> in the pot</span>
             </span>
-            <span className="crew-meta">pot {fmtEUR2(filled * lottery.sharePrice)} · unspent {fmtEUR2(pot)}</span>
+            <span className="crew-meta">unspent {fmtEUR2(unspent)} · {lottery.tickets.length} tickets</span>
             <div className="spacer" />
-            <span className="crew-meta">your slice: <b className="pct-badge">{fmtPct(yourPct)}</b> ({yourShares} share{yourShares !== 1 ? 's' : ''})</span>
+            <span className="crew-meta">your stake: <b className="pct-badge">{fmtEUR2(yourStake)}</b> ({fmtPct(yourPct)})</span>
           </div>
-          <div className="progress money"><i style={{ width: `${Math.min(100, (filled / lottery.targetShares) * 100)}%` }} /></div>
+          <div className="progress money" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(yourPct * 100)} aria-label={`Your share of the pot: ${fmtPct(yourPct)}`}><i style={{ width: `${yourPct * 100}%` }} aria-hidden="true" /></div>
+          {lastChip && (
+            <div className="live-chip" key={lastChip.id}>
+              <span className="live-dot" aria-hidden="true" />
+              <span aria-hidden="true">💰</span>
+              <b>{lastChip.text}</b>
+              <span className="when">{timeAgo(lastChip.t)}</span>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
-          {open && <button className="btn btn-money" onClick={() => setShowContribute(true)}>💰 Buy shares</button>}
-          {open && isCaptain && <button className="btn btn-primary" disabled={affordable < 1} onClick={() => setShowPicker(true)}>🎫 Buy tickets {affordable > 0 ? `(pot covers ${affordable})` : '(fill the pot first)'}</button>}
+          {open && <button className="btn btn-money" onClick={() => setShowContribute(true)}>💰 Add money</button>}
+          {open && isCaptain && <button className="btn btn-primary" disabled={affordable < 1} onClick={() => setShowPicker(true)}>🎫 Buy tickets {affordable > 0 ? `(pot covers ${affordable})` : '(add money first)'}</button>}
           {open && isCaptain && lottery.tickets.length > 0 && (
-            <button className="btn btn-ghost" onClick={() => { dispatch({ type: 'lockLottery', lotteryId: lottery.id }); toast(dispatch, 'Entries locked. Ownership snapshot taken', '🔒') }}>🔒 Lock &amp; go to draw</button>
+            <button className="btn btn-ghost" onClick={() => { dispatch({ type: 'lockLottery', lotteryId: lottery.id }); toast(dispatch, 'Entries locked. Stakes snapshot taken', '🔒') }}>🔒 Lock &amp; go to draw</button>
           )}
           {lottery.status === 'locked' && <button className="btn btn-primary btn-lg pulse-glow" onClick={() => nav(dispatch, { name: 'draw', lotteryId: lottery.id })}>🎥 Watch the draw live</button>}
           {lottery.status === 'settled' && <button className="btn btn-money" onClick={() => nav(dispatch, { name: 'results', lotteryId: lottery.id })}>🏆 View results &amp; split</button>}
@@ -79,8 +89,8 @@ export default function LotteryPage({ lotteryId }) {
       </div>
 
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {[['tickets', `🎫 Tickets (${lottery.tickets.length})`], ['contributors', `💰 Contributions (${contributors.length})`], ['ledger', '📜 Ledger']].map(([k, l]) => (
-          <button key={k} className={`tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>
+        {[['tickets', `🎫 Tickets (${lottery.tickets.length})`], ['contributors', `💰 Stakes (${contributors.length})`], ['ledger', '📜 Ledger']].map(([k, l]) => (
+          <button key={k} className={`tab ${tab === k ? 'active' : ''}`} aria-pressed={tab === k} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
 
@@ -89,7 +99,7 @@ export default function LotteryPage({ lotteryId }) {
           {lottery.tickets.length === 0 ? (
             <div className="empty">
               <div className="big">🎫</div>
-              <div>No tickets yet. Fill the pot, then the captain converts it into tickets, quick picks or hand-picked numbers.</div>
+              <div>No tickets yet. Add money to the pot, then the captain converts it into tickets: quick picks or hand-picked numbers.</div>
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10 }}>
@@ -111,18 +121,18 @@ export default function LotteryPage({ lotteryId }) {
       {tab === 'contributors' && (
         <div className="card card-pad">
           {contributors.map(m => {
-            const shares = lottery.shares[m.id]
-            const pct = filled ? shares / filled : 0
+            const stake = lottery.contributions[m.id]
+            const pct = pot ? stake / pot : 0
             return (
               <div className="row" key={m.id}>
                 <div className="member-avatar">{m.avatar}</div>
                 <div className="grow">
                   <div className="row-title">{m.name}{m.id === 'you' && ' (you)'} {crew.captainId === m.id && <span className="chip captain" style={{ marginLeft: 6 }}>⭐ Captain</span>}</div>
-                  <div className="row-sub">{shares} share{shares !== 1 ? 's' : ''} · {fmtEUR2(shares * lottery.sharePrice)}</div>
+                  <div className="row-sub">staked {fmtEUR2(stake)}</div>
                 </div>
                 <div style={{ width: 120 }}>
-                  <div className="progress" style={{ height: 8, marginBottom: 4 }}><i style={{ width: `${pct * 100}%` }} /></div>
-                  <div className="row-sub" style={{ textAlign: 'right' }}><b className="pct-badge" style={{ fontSize: 13 }}>{fmtPct(pct)}</b> ownership</div>
+                  <div className="progress" aria-hidden="true" style={{ height: 8, marginBottom: 4 }}><i style={{ width: `${pct * 100}%` }} /></div>
+                  <div className="row-sub" style={{ textAlign: 'right' }}><b className="pct-badge" style={{ fontSize: 13 }}>{fmtPct(pct)}</b> of the pot</div>
                 </div>
               </div>
             )
@@ -154,49 +164,37 @@ export default function LotteryPage({ lotteryId }) {
   )
 }
 
-// ── Contribute modal ─────────────────────────────────────────────────────────
+// ── Add money modal ──────────────────────────────────────────────────────────
 
 function ContributeModal({ lottery, onClose }) {
   const { state, dispatch } = useStore()
-  const yourShares = lottery.shares.you || 0
-  const maxMore = lottery.maxPerMember - yourShares
-  const [n, setN] = useState(Math.min(1, Math.max(0, maxMore)) || 1)
-  const cost = n * lottery.sharePrice
-  const filled = lotteryFilled(lottery)
-  const newPct = (yourShares + n) / (filled + n)
-  const canAfford = cost <= state.wallet.balance
+  const step = GAME.ticketPrice
+  const [amount, setAmount] = useState(step)
+  const pot = potTotal(lottery)
+  const yourStake = lottery.contributions.you || 0
+  const newPct = (yourStake + amount) / (pot + amount)
+  const canAfford = amount <= state.wallet.balance
   const confirm = () => {
-    dispatch({ type: 'contribute', lotteryId: lottery.id, shares: n })
-    toast(dispatch, `You bought ${n} share${n > 1 ? 's' : ''} for ${fmtEUR2(cost)}`, '💰')
+    dispatch({ type: 'contribute', lotteryId: lottery.id, amount })
+    toast(dispatch, `You added ${fmtEUR2(amount)} to the pot`, '💰')
     onClose()
   }
-  if (maxMore <= 0) {
-    return (
-      <Modal onClose={onClose}>
-        <h3 className="display">You're maxed out 🎉</h3>
-        <p className="sub">This entry caps shares at {lottery.maxPerMember} per member to keep things fair.</p>
-        <button className="btn btn-ghost" onClick={onClose} style={{ width: '100%' }}>Got it</button>
-      </Modal>
-    )
-  }
   return (
-    <Modal onClose={onClose}>
-      <h3 className="display">Buy shares</h3>
-      <p className="sub">€{lottery.sharePrice.toFixed(2)} per share · you can add up to {maxMore} more</p>
-      <div className="stepper" style={{ margin: '20px 0' }}>
-        <button disabled={n <= 1} onClick={() => setN(n - 1)}>−</button>
-        <div className="val">{n}</div>
-        <button disabled={n >= maxMore} onClick={() => setN(n + 1)}>+</button>
+    <Modal onClose={onClose} label="Add money">
+      <h2 className="display">Add money</h2>
+      <p className="sub">Type any amount, minimum {fmtEUR2(step)}. The more you add, the bigger your cut of every win.</p>
+      <div style={{ margin: '20px 0' }}>
+        <StakeInput value={amount} min={step} onChange={setAmount} label="Amount to add to the pot" />
       </div>
       <div className="stat-tiles" style={{ marginBottom: 18 }}>
-        <div className="stat-tile"><div className="k">Cost</div><div className="v">{fmtEUR2(cost)}</div></div>
-        <div className="stat-tile"><div className="k">Your slice after</div><div className="v" style={{ color: 'var(--cyan)' }}>{fmtPct(newPct)}</div></div>
+        <div className="stat-tile"><div className="k">Your stake after</div><div className="v">{fmtEUR2(yourStake + amount)}</div></div>
+        <div className="stat-tile"><div className="k">Your cut after</div><div className="v" style={{ color: 'var(--cyan)' }}>{fmtPct(newPct)}</div></div>
         <div className="stat-tile"><div className="k">Wallet</div><div className="v" style={{ color: canAfford ? 'var(--money)' : 'var(--hotpink)' }}>{fmtEUR2(state.wallet.balance)}</div></div>
       </div>
       {!canAfford && <p className="sub" style={{ color: 'var(--hotpink)' }}>Not enough balance. Top up in Wallet first.</p>}
       <div style={{ display: 'flex', gap: 10 }}>
         <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-        <button className="btn btn-money" disabled={!canAfford} onClick={confirm} style={{ flex: 2 }}>Pay {fmtEUR2(cost)}</button>
+        <button className="btn btn-money" disabled={!canAfford} onClick={confirm} style={{ flex: 2 }}>Pay {fmtEUR2(amount)}</button>
       </div>
       <div className="row-sub" style={{ textAlign: 'center', marginTop: 12 }}>Refundable until entries lock · Play responsibly 18+</div>
     </Modal>
@@ -228,20 +226,20 @@ function TicketPickerModal({ lottery, affordable, onClose }) {
   }
 
   return (
-    <Modal onClose={onClose} width={560}>
-      <h3 className="display">Buy tickets from the pot</h3>
+    <Modal onClose={onClose} width={560} label="Buy tickets from the pot">
+      <h2 className="display">Buy tickets from the pot</h2>
       <p className="sub">Pot covers {affordable} ticket{affordable !== 1 ? 's' : ''} at €{GAME.ticketPrice.toFixed(2)} each. Tickets belong to the crew, everyone owns their slice.</p>
       <div className="tabs" style={{ marginBottom: 18 }}>
-        <button className={`tab ${mode === 'quick' ? 'active' : ''}`} onClick={() => setMode('quick')}>⚡ Quick pick</button>
-        <button className={`tab ${mode === 'manual' ? 'active' : ''}`} onClick={() => setMode('manual')}>🎯 Pick numbers</button>
+        <button className={`tab ${mode === 'quick' ? 'active' : ''}`} aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>⚡ Quick pick</button>
+        <button className={`tab ${mode === 'manual' ? 'active' : ''}`} aria-pressed={mode === 'manual'} onClick={() => setMode('manual')}>🎯 Pick numbers</button>
       </div>
 
       {mode === 'quick' && (
         <>
           <div className="stepper" style={{ margin: '10px 0 20px' }}>
-            <button disabled={qty <= 1} onClick={() => setQty(qty - 1)}>−</button>
-            <div className="val">{qty}</div>
-            <button disabled={qty >= affordable} onClick={() => setQty(qty + 1)}>+</button>
+            <button aria-disabled={qty <= 1} aria-label="One fewer ticket" onClick={() => qty > 1 && setQty(qty - 1)}>−</button>
+            <div className="val" aria-live="polite" aria-label={`${qty} tickets selected`}>{qty}</div>
+            <button aria-disabled={qty >= affordable} aria-label="One more ticket" onClick={() => qty < affordable && setQty(qty + 1)}>+</button>
           </div>
           <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={buyQuick}>Buy {qty} ticket{qty > 1 ? 's' : ''} · {fmtEUR2(qty * GAME.ticketPrice)} from pot</button>
         </>
@@ -249,22 +247,22 @@ function TicketPickerModal({ lottery, affordable, onClose }) {
 
       {mode === 'manual' && (
         <>
-          <div className="field">
-            <label>Pick {GAME.pickCount} numbers (1 to {GAME.numberMax}), {nums.length}/{GAME.pickCount} picked</label>
+          <fieldset className="field">
+            <legend>Pick {GAME.pickCount} numbers (1 to {GAME.numberMax}), {nums.length}/{GAME.pickCount} picked</legend>
             <div className="num-grid">
               {Array.from({ length: GAME.numberMax }, (_, i) => i + 1).map(n => (
-                <button key={n} className={`num-cell ${nums.includes(n) ? 'sel' : ''}`} onClick={() => toggleNum(n)}>{n}</button>
+                <button key={n} type="button" className={`num-cell ${nums.includes(n) ? 'sel' : ''}`} aria-pressed={nums.includes(n)} onClick={() => toggleNum(n)}>{n}</button>
               ))}
             </div>
-          </div>
-          <div className="field">
-            <label>Pick your ★ Star Ball (1 to {GAME.starMax})</label>
-            <div className="num-grid" style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}>
+          </fieldset>
+          <fieldset className="field">
+            <legend>Pick your ★ Star Ball (1 to {GAME.starMax})</legend>
+            <div className="num-grid">
               {Array.from({ length: GAME.starMax }, (_, i) => i + 1).map(n => (
-                <button key={n} className={`num-cell ${star === n ? 'star-sel' : ''}`} onClick={() => setStar(n)}>{n}</button>
+                <button key={n} type="button" className={`num-cell ${star === n ? 'star-sel' : ''}`} aria-pressed={star === n} onClick={() => setStar(n)}>{n}</button>
               ))}
             </div>
-          </div>
+          </fieldset>
           <button className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={!manualReady} onClick={buyManual}>
             Buy this ticket · {fmtEUR2(GAME.ticketPrice)} from pot
           </button>

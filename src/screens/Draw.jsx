@@ -11,6 +11,7 @@ export default function Draw({ lotteryId }) {
   const [count, setCount] = useState(3)
   const [revealed, setRevealed] = useState(0)
   const resultRef = useRef(null)
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   const start = lucky => {
     resultRef.current = lucky ? luckyDraw(lottery.tickets) : fairDraw()
@@ -21,28 +22,29 @@ export default function Draw({ lotteryId }) {
   useEffect(() => {
     if (phase !== 'count') return
     if (count === 0) { setPhase('reveal'); setRevealed(0); return }
-    const t = setTimeout(() => setCount(c => c - 1), 800)
+    const t = setTimeout(() => setCount(c => c - 1), reduceMotion ? 0 : 800)
     return () => clearTimeout(t)
   }, [phase, count])
 
   useEffect(() => {
     if (phase !== 'reveal') return
     if (revealed >= GAME.pickCount + 1) {
-      const result = resultRef.current
-      dispatch({ type: 'setResult', lotteryId, result })
-      const t = setTimeout(() => {
-        const settlement = settleDraw(lottery, crew, result)
-        dispatch({ type: 'settle', lotteryId, settlement })
-        nav(dispatch, { name: 'results', lotteryId })
-      }, 1600)
-      return () => clearTimeout(t)
+      dispatch({ type: 'setResult', lotteryId, result: resultRef.current })
+      return
     }
-    const t = setTimeout(() => setRevealed(r => r + 1), 900)
+    const t = setTimeout(() => setRevealed(r => r + 1), reduceMotion ? 0 : 900)
     return () => clearTimeout(t)
   }, [phase, revealed]) // eslint-disable-line
 
   if (!lottery || !crew) return null
   const result = resultRef.current
+
+  const finish = () => {
+    const settlement = settleDraw(lottery, crew, resultRef.current)
+    dispatch({ type: 'settle', lotteryId, settlement })
+    nav(dispatch, { name: 'results', lotteryId })
+  }
+  const skip = () => { setPhase('reveal'); setRevealed(GAME.pickCount + 1) }
 
   return (
     <div className="container" style={{ maxWidth: 760 }}>
@@ -85,15 +87,27 @@ export default function Draw({ lotteryId }) {
         )}
 
         {phase === 'reveal' && revealed >= GAME.pickCount + 1 && (
-          <div style={{ marginTop: 20, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--cyan)' }}>
-            Checking crew tickets… ✨
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--cyan)', marginBottom: 14 }}>
+              All numbers drawn ✨ Matches light up below.
+            </div>
+            <button className="btn btn-money btn-lg" onClick={finish}>🏆 See results &amp; the split</button>
           </div>
         )}
+        {(phase === 'count' || (phase === 'reveal' && revealed < GAME.pickCount + 1)) && (
+          <div style={{ marginTop: 16 }}>
+            <button className="btn btn-ghost btn-sm" onClick={skip}>⏭ Skip animation</button>
+          </div>
+        )}
+        <div role="status" className="sr-only">
+          {phase === 'count' && 'Draw starting'}
+          {phase === 'reveal' && revealed >= GAME.pickCount + 1 && result && `Winning numbers ${result.nums.join(', ')}, star ${result.star}.`}
+        </div>
       </div>
 
       {lottery.tickets.length > 0 && (
         <div className="card card-pad" style={{ marginTop: 18 }}>
-          <div className="section-title" style={{ fontSize: 17 }}>Crew tickets {phase === 'reveal' && revealed >= GAME.pickCount + 1 ? '· matches light up' : ''}</div>
+          <h2 className="section-title" style={{ fontSize: 17 }}>Crew tickets {phase === 'reveal' && revealed >= GAME.pickCount + 1 ? '· matches light up' : ''}</h2>
           <div style={{ display: 'grid', gap: 10 }}>
             {lottery.tickets.map((t, i) => (
               <div className="ticket-card" key={t.id}>

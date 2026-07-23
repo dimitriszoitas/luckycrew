@@ -5,7 +5,7 @@ export const GAME = {
   pickCount: 5,
   numberMax: 40,
   starMax: 10,
-  ticketPrice: 2.5,
+  ticketPrice: 0.5,
   jackpot: 1250000,
 }
 
@@ -57,17 +57,18 @@ export function scoreTicket(ticket, result) {
   return { matched, starHit, tier: tier || null, prize }
 }
 
-// lottery: { tickets, shares: {memberId: n} } · crew: { members }
+// lottery: { tickets, contributions: {memberId: €} } · crew: { members }
+// Whatever you put in defines your cut of every win.
 export function settleDraw(lottery, crew, result) {
   const scored = lottery.tickets.map(t => ({ ticket: t, ...scoreTicket(t, result) }))
   const totalWon = scored.reduce((s, x) => s + x.prize, 0)
-  const totalShares = Object.values(lottery.shares).reduce((s, n) => s + n, 0)
+  const totalIn = Object.values(lottery.contributions).reduce((s, n) => s + n, 0)
   const splits = crew.members
-    .filter(m => (lottery.shares[m.id] || 0) > 0)
+    .filter(m => (lottery.contributions[m.id] || 0) > 0)
     .map(m => {
-      const shares = lottery.shares[m.id]
-      const pct = totalShares ? shares / totalShares : 0
-      return { memberId: m.id, name: m.name, avatar: m.avatar, shares, pct, amount: Math.floor(totalWon * pct * 100) / 100 }
+      const stake = lottery.contributions[m.id]
+      const pct = totalIn ? stake / totalIn : 0
+      return { memberId: m.id, name: m.name, avatar: m.avatar, stake, pct, amount: Math.floor(totalWon * pct * 100) / 100 }
     })
   const distributed = splits.reduce((s, x) => s + x.amount, 0)
   const remainder = Math.round((totalWon - distributed) * 100) / 100

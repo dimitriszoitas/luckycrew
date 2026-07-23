@@ -26,30 +26,30 @@ export default function CreateCrew() {
       <div className="card card-pad">
         <div className="section-title">Give it a face</div>
         <div className="field">
-          <label>Crew name</label>
-          <input className="input" placeholder="e.g. Office Legends" value={f.name} onChange={e => set({ name: e.target.value })} maxLength={26} autoFocus />
+          <label htmlFor="crew-name">Crew name</label>
+          <input id="crew-name" className="input" placeholder="e.g. Office Legends" value={f.name} onChange={e => set({ name: e.target.value })} maxLength={26} autoFocus />
         </div>
-        <div className="field">
-          <label>Mascot</label>
+        <fieldset className="field">
+          <legend>Mascot</legend>
           <div className="emoji-pick">
-            {EMOJIS.map(e => <button key={e} className={f.emoji === e ? 'on' : ''} onClick={() => set({ emoji: e })}>{e}</button>)}
+            {EMOJIS.map(e => <button key={e} type="button" className={f.emoji === e ? 'on' : ''} aria-pressed={f.emoji === e} aria-label={`Mascot ${e}`} onClick={() => set({ emoji: e })}>{e}</button>)}
           </div>
-        </div>
-        <div className="field">
-          <label>Vibe</label>
+        </fieldset>
+        <fieldset className="field">
+          <legend>Vibe</legend>
           <div className="seg">
             {COLORS.map(([key, label]) => (
-              <button key={key} className={f.color === key ? 'on' : ''} onClick={() => set({ color: key })}>{label}</button>
+              <button key={key} type="button" className={f.color === key ? 'on' : ''} aria-pressed={f.color === key} onClick={() => set({ color: key })}>{label}</button>
             ))}
           </div>
-        </div>
-        <div className="field">
-          <label>Who can join?</label>
+        </fieldset>
+        <fieldset className="field">
+          <legend>Who can join?</legend>
           <div className="seg">
-            <button className={f.privacy === 'private' ? 'on' : ''} onClick={() => set({ privacy: 'private' })}>🔗 Invite only</button>
-            <button className={f.privacy === 'public' ? 'on' : ''} onClick={() => set({ privacy: 'public' })}>🌍 Public, anyone can join</button>
+            <button type="button" className={f.privacy === 'private' ? 'on' : ''} aria-pressed={f.privacy === 'private'} onClick={() => set({ privacy: 'private' })}>🔗 Invite only</button>
+            <button type="button" className={f.privacy === 'public' ? 'on' : ''} aria-pressed={f.privacy === 'public'} onClick={() => set({ privacy: 'public' })}>🌍 Public, anyone can join</button>
           </div>
-        </div>
+        </fieldset>
 
         <p style={{ fontSize: 13.5, color: 'var(--text-dim)', lineHeight: 1.6, margin: '4px 0 18px' }}>
           Next step after creating: invite members, then enter tonight's draw and set share price, pot size and per-member cap for that entry.

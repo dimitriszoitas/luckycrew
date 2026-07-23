@@ -19,12 +19,7 @@ export default function Results({ lotteryId }) {
   const nextDraw = nextDrawFor(state, crew.id)
 
   const playAgain = () => {
-    dispatch({
-      type: 'enterLottery',
-      crewId: crew.id,
-      drawNo: nextDraw,
-      rules: { sharePrice: lottery.sharePrice, targetShares: lottery.targetShares, maxPerMember: lottery.maxPerMember },
-    })
+    dispatch({ type: 'enterLottery', crewId: crew.id, drawNo: nextDraw })
     toast(dispatch, `${crew.name} entered draw #${nextDraw}. Fill the pot!`, '🎟️')
   }
 
@@ -59,22 +54,22 @@ export default function Results({ lotteryId }) {
 
       {won && (
         <div className="card card-pad" style={{ marginBottom: 18 }}>
-          <div className="section-title">⚡ The split: automatic, proportional, on-ledger</div>
-          <div className="split-bar" style={{ marginBottom: 14 }}>
+          <h2 className="section-title"><span aria-hidden="true">⚡</span> The split: automatic, proportional, on-ledger</h2>
+          <div className="split-bar" aria-hidden="true" style={{ marginBottom: 14 }}>
             {splits.map((s, i) => (
               <i key={s.memberId} title={`${s.name} ${fmtPct(s.pct)}`} style={{ width: `${s.pct * 100}%`, background: SLICE_COLORS[i % SLICE_COLORS.length] }} />
             ))}
           </div>
           <table className="split">
             <thead>
-              <tr><th>Member</th><th>Shares</th><th>Ownership</th><th style={{ textAlign: 'right' }}>Credited</th></tr>
+              <tr><th scope="col">Member</th><th scope="col">Stake</th><th scope="col">Ownership</th><th scope="col" style={{ textAlign: 'right' }}>Credited</th></tr>
             </thead>
             <tbody>
               {splits.map((s, i) => (
                 <tr key={s.memberId} className={s.memberId === 'you' ? 'you' : ''}>
                   <td><span style={{ marginRight: 8 }}>{s.avatar}</span>{s.name}{s.memberId === 'you' && ' (you)'}</td>
-                  <td>{s.shares}</td>
-                  <td><b style={{ color: SLICE_COLORS[i % SLICE_COLORS.length] }}>{fmtPct(s.pct)}</b></td>
+                  <td>{fmtEUR2(s.stake)}</td>
+                  <td><b style={{ color: 'var(--text)' }}><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, marginRight: 6, background: SLICE_COLORS[i % SLICE_COLORS.length], border: '1px solid var(--text-dim)' }} /> {fmtPct(s.pct)}</b></td>
                   <td className="amt">+{fmtEUR2(s.amount)}</td>
                 </tr>
               ))}
@@ -87,7 +82,7 @@ export default function Results({ lotteryId }) {
       )}
 
       <div className="card card-pad" style={{ marginBottom: 18 }}>
-        <div className="section-title">🎫 Ticket results</div>
+        <h2 className="section-title"><span aria-hidden="true">🎫</span> Ticket results</h2>
         <div style={{ display: 'grid', gap: 10 }}>
           {scored.map((s, i) => (
             <div className="ticket-card" key={s.ticket.id} style={s.prize > 0 ? { borderColor: 'color-mix(in srgb, var(--gold) 45%, transparent)', boxShadow: 'var(--glow-lime)' } : undefined}>

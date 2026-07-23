@@ -1,26 +1,198 @@
-import React, { useEffect, useState } from 'react'
-import { useStore, nav, crewById, lotteryFilled, isMemberOf, crewLuck } from './store.jsx'
+import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useStore, nav, toast, crewById, potTotal, isMemberOf, crewLuck, crewEarnings } from './store.jsx'
 import { GAME, fmtEUR, fmtEUR2, fmtPct } from './game.js'
+
+// Keyboard activation for clickable cards (SC 2.1.1)
+export const onCardKey = handler => e => {
+  if (e.target !== e.currentTarget) return // nested buttons handle their own keys
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault() // stop Space from scrolling the page
+    handler()
+  }
+}
+
+// Odometer-style count-up: tweens from the previous value on every change.
+// Jumps instantly under prefers-reduced-motion or the ⏸ toggle.
+export function AnimatedNumber({ value, format = v => v }) {
+  const [display, setDisplay] = useState(value)
+  const displayRef = useRef(value)
+  const rafRef = useRef()
+  useEffect(() => {
+    const from = displayRef.current
+    const to = value
+    if (from === to) return
+    const instant =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      document.documentElement.dataset.motion === 'off'
+    if (instant) { displayRef.current = to; setDisplay(to); return }
+    const t0 = performance.now()
+    const dur = 700
+    const ease = x => 1 - Math.pow(1 - x, 3)
+    cancelAnimationFrame(rafRef.current)
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / dur)
+      const v = from + (to - from) * ease(p)
+      displayRef.current = v
+      setDisplay(v)
+      if (p < 1) rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [value])
+  return <>{format(display)}</>
+}
 
 export function Header() {
   const { state, dispatch } = useStore()
+  const [showA11y, setShowA11y] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (!showMenu) return
+    const onDoc = e => { if (!menuRef.current?.contains(e.target)) setShowMenu(false) }
+    const onKey = e => { if (e.key === 'Escape') setShowMenu(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [showMenu])
+  const demo = label => { setShowMenu(false); toast(dispatch, `${label}: demo only`, '🔧') }
   return (
-    <div className="topbar">
+    <header className="topbar">
       <div className="container topbar-inner">
-        <div className="logo" onClick={() => nav(dispatch, { name: 'home' })}>
-          <span className="mark">🍀</span>
+        <button type="button" className="logo" aria-label="LuckyCrew home" onClick={() => nav(dispatch, { name: 'home' })}>
+          <span className="mark" aria-hidden="true">
+            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" /><path d="M13 11v2" /><path d="M13 17v2" />
+            </svg>
+          </span>
           <span><span className="lucky">Lucky</span>Crew</span>
-        </div>
+        </button>
+        <button
+          className="nav-link"
+          aria-current={state.route.name === 'exercise' ? 'page' : undefined}
+          onClick={() => nav(dispatch, { name: 'exercise' })}
+        >
+          Exercise Details
+        </button>
         <div className="spacer" />
-        <button className="wallet-chip" onClick={() => nav(dispatch, { name: 'wallet' })} title="Wallet">
-          <span>💶</span> {fmtEUR2(state.wallet.balance)}
+        <button className="wallet-chip" onClick={() => nav(dispatch, { name: 'wallet' })} aria-label={`Wallet, balance ${fmtEUR2(state.wallet.balance)}`}>
+          <span aria-hidden="true">💶</span> <AnimatedNumber value={state.wallet.balance} format={v => fmtEUR2(v)} />
         </button>
-        <button className="icon-btn" onClick={() => dispatch({ type: 'theme' })} title="Toggle theme">
-          {state.theme === 'dark' ? '☀️' : '🌙'}
+        <button className="icon-btn" aria-label="Accessibility options" aria-haspopup="dialog" onClick={() => setShowA11y(true)}>
+          <span aria-hidden="true">♿</span>
         </button>
-        <div className="avatar-chip" title="Jim">😎</div>
+        <button className="icon-btn" onClick={() => dispatch({ type: 'theme' })} aria-label={state.theme === 'dark' ? 'Switch to corporate mode' : 'Switch to playful mode'}>
+          <span aria-hidden="true">{state.theme === 'dark' ? '🏛️' : '🎮'}</span>
+        </button>
+        <div className="avatar-menu-wrap" ref={menuRef}>
+          <button className="avatar-chip" aria-label="Account menu: Jim" aria-haspopup="menu" aria-expanded={showMenu} onClick={() => setShowMenu(v => !v)}>
+            J
+          </button>
+          {showMenu && (
+            <div className="avatar-menu" role="menu" aria-label="Account">
+              <div className="avatar-menu-head">
+                <span className="avatar-chip" aria-hidden="true">J</span>
+                <div>
+                  <div className="row-title">Jim</div>
+                  <div className="row-sub">jim@luckycrew.app</div>
+                </div>
+              </div>
+              <button role="menuitem" onClick={() => demo('Profile')}>Profile</button>
+              <button role="menuitem" onClick={() => demo('Settings')}>Settings</button>
+              <button role="menuitem" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'wallet' }) }}>Wallet</button>
+              <div className="sep" aria-hidden="true" />
+              <button role="menuitem" onClick={() => demo('Sign out')}>Sign out</button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      {showA11y && <A11yPanel onClose={() => setShowA11y(false)} />}
+    </header>
+  )
+}
+
+// Accessible toggle switch (role=switch, 44px hit target via ::after halo)
+function Switch({ checked, onChange, label }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`switch ${checked ? 'on' : ''}`} onClick={onChange}>
+      <span className="knob" aria-hidden="true" />
+    </button>
+  )
+}
+
+// All accessibility controls in one place, applied via attributes on <html>
+function A11yPanel({ onClose }) {
+  const root = document.documentElement
+  const [motionOn, setMotionOn] = useState(root.dataset.motion !== 'off')
+  const [textSize, setTextSize] = useState(root.dataset.textsize || 'normal')
+  const [contrast, setContrast] = useState(root.dataset.contrast === 'high')
+  const [solid, setSolid] = useState(root.dataset.transparency === 'off')
+
+  const toggleMotion = () => {
+    const next = !motionOn
+    setMotionOn(next)
+    root.dataset.motion = next ? 'on' : 'off'
+  }
+  const applyText = v => {
+    setTextSize(v)
+    root.dataset.textsize = v
+    root.style.zoom = v === 'normal' ? '' : v === 'large' ? '1.15' : '1.3'
+  }
+  const toggleContrast = () => {
+    const next = !contrast
+    setContrast(next)
+    if (next) root.dataset.contrast = 'high'
+    else delete root.dataset.contrast
+  }
+  const toggleSolid = () => {
+    const next = !solid
+    setSolid(next)
+    if (next) root.dataset.transparency = 'off'
+    else delete root.dataset.transparency
+  }
+
+  return (
+    <Modal onClose={onClose} width={480} label="Accessibility options">
+      <h2 className="display">Accessibility</h2>
+      <p className="sub">Applies instantly and stays on while you browse.</p>
+
+      <div className="a11y-row">
+        <div>
+          <div className="row-title">Animations</div>
+          <div className="row-sub">Sparkles, waves, tickers and other decorative motion</div>
+        </div>
+        <Switch checked={motionOn} onChange={toggleMotion} label="Animations" />
+      </div>
+
+      <fieldset className="a11y-row" style={{ border: 0 }}>
+        <legend className="row-title" style={{ padding: 0 }}>Text size</legend>
+        <div className="seg">
+          {[['normal', 'Normal'], ['large', 'Large'], ['xl', 'Extra large']].map(([v, label]) => (
+            <button key={v} type="button" className={textSize === v ? 'on' : ''} aria-pressed={textSize === v} onClick={() => applyText(v)}>{label}</button>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="a11y-row">
+        <div>
+          <div className="row-title">High contrast</div>
+          <div className="row-sub">Stronger borders and brighter secondary text</div>
+        </div>
+        <Switch checked={contrast} onChange={toggleContrast} label="High contrast" />
+      </div>
+
+      <div className="a11y-row">
+        <div>
+          <div className="row-title">Reduce transparency</div>
+          <div className="row-sub">Solid backgrounds instead of blur effects</div>
+        </div>
+        <Switch checked={solid} onChange={toggleSolid} label="Reduce transparency" />
+      </div>
+
+      <button className="btn btn-primary" style={{ width: '100%', marginTop: 18 }} onClick={onClose}>Done</button>
+    </Modal>
   )
 }
 
@@ -32,12 +204,12 @@ export function Countdown({ target, small }) {
   }, [target])
   const h = Math.floor(t / 3600000), m = Math.floor((t % 3600000) / 60000), s = Math.floor((t % 60000) / 1000)
   const cells = [[h, 'hrs'], [m, 'min'], [s, 'sec']]
-  if (small) return <b style={{ fontFamily: 'var(--font-display)' }}>{String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</b>
+  if (small) return <b role="timer" aria-label={`Closes in ${h} hours ${m} minutes`} style={{ fontFamily: 'var(--font-display)' }}>{String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</b>
   return (
-    <div className="countdown">
+    <div className="countdown" role="timer" aria-label={`Draw closes in ${h} hours ${m} minutes`}>
       {cells.map(([v, l]) => (
-        <div className="count-cell" key={l}>
-          <div className="count-num">{String(v).padStart(2, '0')}</div>
+        <div className="count-cell" key={l} aria-hidden="true">
+          <div className="count-num"><span className="count-digit" key={v}>{String(v).padStart(2, '0')}</span></div>
           <div className="count-lbl">{l}</div>
         </div>
       ))}
@@ -46,27 +218,32 @@ export function Countdown({ target, small }) {
 }
 
 export function Balls({ nums, star, result, size = '' }) {
+  const matched = result ? nums.filter(n => result.nums.includes(n)) : null
+  const label = `Numbers ${nums.join(', ')}, star ${star}` +
+    (result ? `. Matched: ${matched.join(', ') || 'none'}${result.star === star ? ', star matched' : ''}` : '')
   return (
-    <div className="ball-row">
-      {nums.map(n => (
-        <div key={n} className={`ball ${size} ${result && result.nums.includes(n) ? 'hit' : ''}`}>{n}</div>
-      ))}
-      <span className="plus-sep">+</span>
-      <div className={`ball star ${size} ${result && result.star === star ? 'hit' : ''}`}>{star}</div>
+    <div className="ball-row" role="img" aria-label={label}>
+      <span aria-hidden="true" style={{ display: 'contents' }}>
+        {nums.map(n => (
+          <div key={n} className={`ball ${size} ${result && result.nums.includes(n) ? 'hit' : ''}`}>{n}</div>
+        ))}
+        <span className="plus-sep">+</span>
+        <div className={`ball star ${size} ${result && result.star === star ? 'hit' : ''}`}>{star}</div>
+      </span>
     </div>
   )
 }
 
 export function StatusChip({ status }) {
-  const label = { open: '● Open', locked: '🔒 Locked', drawing: '🎥 Drawing', settled: '✓ Settled' }[status]
-  return <span className={`chip ${status}`}>{label}</span>
+  const words = { open: 'Open', locked: 'Locked', drawing: 'Drawing', settled: 'Settled' }
+  return <span className={`chip ${status}`}>{words[status]}</span>
 }
 
 export function FacePile({ members, max = 5 }) {
   const shown = members.slice(0, max)
   return (
     <div className="face-pile">
-      {shown.map(m => <div className="face" key={m.id} title={m.name}>{m.avatar}</div>)}
+      {shown.map(m => <div className="face" key={m.id} role="img" aria-label={m.name}>{m.avatar}</div>)}
       {members.length > max && <div className="face more">+{members.length - max}</div>}
     </div>
   )
@@ -74,8 +251,8 @@ export function FacePile({ members, max = 5 }) {
 
 export function LuckBadge({ luck, dim }) {
   return (
-    <span className={`luck-badge ${dim ? 'dim' : ''}`} title={`Won ${luck.won} of ${luck.played} draws played`}>
-      🍀 {luck.pct}% lucky
+    <span className={`luck-badge ${dim ? 'dim' : ''}`} aria-label={`${luck.pct}% lucky: won ${luck.won} of ${luck.played} draws played`}>
+      <span aria-hidden="true">🍀</span> {luck.pct}% lucky
     </span>
   )
 }
@@ -86,8 +263,10 @@ export function CrewCard({ crew, joinLotteryCta }) {
   const member = isMemberOf(crew)
   const isCaptain = crew.captainId === 'you'
   const luck = crewLuck(state, crew.id)
+  const earnings = crewEarnings(state, crew.id)
+  const open = () => nav(dispatch, member ? { name: 'crew', crewId: crew.id } : { name: 'join', crewId: crew.id })
   return (
-    <div className="card card-pad crew-card" onClick={() => nav(dispatch, member ? { name: 'crew', crewId: crew.id } : { name: 'join', crewId: crew.id })}>
+    <div className="card card-pad crew-card" role="button" tabIndex={0} aria-label={`${crew.name}, ${crew.members.length} members`} onClick={open} onKeyDown={onCardKey(open)}>
       <div className={`stripe ${crew.color}`} />
       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
         <div className="crew-emoji">{crew.emoji}</div>
@@ -100,16 +279,18 @@ export function CrewCard({ crew, joinLotteryCta }) {
         </div>
         <LuckBadge luck={luck} />
       </div>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14 }}>
-        <FacePile members={crew.members} max={5} />
-        <span className="row-sub">won {luck.won} of {luck.played} draws</span>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+        <span className="row-sub">
+          Total earnings <b style={{ color: 'var(--money)', fontFamily: 'var(--font-display)', fontSize: 15 }}>{(earnings % 1 === 0 ? fmtEUR : fmtEUR2)(earnings)}</b>
+        </span>
+        <span className="row-sub">· won {luck.won} of {luck.played} draws</span>
         <div className="spacer" />
         {joinLotteryCta && (
           <button
-            className="btn btn-gold btn-sm hover-cta"
+            className="btn btn-outline btn-sm"
             onClick={e => { e.stopPropagation(); dispatch({ type: 'openJoinLottery', crewId: crew.id }) }}
           >
-            🎟️ Join lottery
+            Join crew
           </button>
         )}
       </div>
@@ -121,8 +302,9 @@ export function CrewCard({ crew, joinLotteryCta }) {
 export function CrewTableRow({ crew }) {
   const { state, dispatch } = useStore()
   const luck = crewLuck(state, crew.id)
+  const open = () => nav(dispatch, { name: 'join', crewId: crew.id })
   return (
-    <div className="crew-trow" onClick={() => nav(dispatch, { name: 'join', crewId: crew.id })}>
+    <div className="crew-trow" role="button" tabIndex={0} aria-label={`Join ${crew.name}`} onClick={open} onKeyDown={onCardKey(open)}>
       <div className="crew-emoji" style={{ width: 42, height: 42, fontSize: 21 }}>{crew.emoji}</div>
       <div style={{ minWidth: 0 }}>
         <div className="row-title">{crew.name}</div>
@@ -131,8 +313,8 @@ export function CrewTableRow({ crew }) {
       <div className="trow-cell">{crew.members.length} members</div>
       <div className="trow-cell"><LuckBadge luck={luck} /></div>
       <div className="trow-cell dim">{luck.won}/{luck.played} draws won</div>
-      <button className="btn btn-primary btn-sm hover-cta" onClick={e => { e.stopPropagation(); nav(dispatch, { name: 'join', crewId: crew.id }) }}>
-        👋 Join crew
+      <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); nav(dispatch, { name: 'join', crewId: crew.id }) }}>
+        Join crew
       </button>
     </div>
   )
@@ -143,40 +325,40 @@ export function CrewTableRow({ crew }) {
 export function LotteryCard({ lottery }) {
   const { state, dispatch } = useStore()
   const crew = crewById(state, lottery.crewId)
-  const filled = lotteryFilled(lottery)
-  const pct = Math.min(100, (filled / lottery.targetShares) * 100)
-  const yourShares = lottery.shares.you || 0
-  const yourPct = filled ? yourShares / filled : 0
-  const yourMax = GAME.jackpot * yourPct
+  const pot = potTotal(lottery)
+  const yourStake = lottery.contributions.you || 0
+  const yourPct = pot ? yourStake / pot : 0
+  const megaPot = Math.floor(state.mega.pot)
+  const open = () => nav(dispatch, { name: 'lottery', lotteryId: lottery.id })
   return (
-    <div className="lottery-card" onClick={() => nav(dispatch, { name: 'lottery', lotteryId: lottery.id })}>
+    <div className="lottery-card" role="button" tabIndex={0} aria-label={`Draw #${lottery.drawNo}, ${crew.name}`} onClick={open} onKeyDown={onCardKey(open)}>
       <div className="lottery-main">
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="crew-title">Draw #{lottery.drawNo} · Star 5</div>
+          <div className="crew-title">Weekly Mega · Draw #{lottery.drawNo}</div>
           <StatusChip status={lottery.status} />
         </div>
-        <div className="crew-meta" style={{ marginTop: 2 }}>paid by <b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b> · €{lottery.sharePrice.toFixed(2)}/share</div>
+        <div className="crew-meta" style={{ marginTop: 4, fontSize: 14 }}><b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b></div>
         <div className="max-win-line">
           <div className="mw">
-            <div className="k">Max win · total</div>
-            <div className="v">{fmtEUR(GAME.jackpot)}</div>
+            <div className="k">Mega pot</div>
+            <div className="v"><AnimatedNumber value={megaPot} format={v => fmtEUR(Math.floor(v))} /></div>
           </div>
           <div className="mw">
-            <div className="k">Max win · your share</div>
-            <div className="v you">{yourPct > 0 ? fmtEUR(Math.floor(yourMax)) : 'buy shares'}</div>
+            <div className="k">Your max win</div>
+            <div className="v you">{yourPct > 0 ? <AnimatedNumber value={Math.floor(megaPot * yourPct)} format={v => fmtEUR(Math.floor(v))} /> : 'buy shares'}</div>
           </div>
         </div>
-        <div className="progress" style={{ marginBottom: 8, height: 10 }}><i style={{ width: `${pct}%` }} /></div>
+        <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(yourPct * 100)} aria-label={`Your share of the pot: ${fmtPct(yourPct)}`} style={{ marginBottom: 8, height: 10 }}><i style={{ width: `${yourPct * 100}%` }} aria-hidden="true" /></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span className="crew-meta"><b style={{ color: 'var(--text)' }}>{filled}</b>/{lottery.targetShares} shares · {lottery.tickets.length} tickets</span>
+          <span className="crew-meta"><b style={{ color: 'var(--text)' }}>{fmtEUR2(pot)}</b> in the pot · {lottery.tickets.length} tickets</span>
           <div className="spacer" />
-          <span className="crew-meta">your slice: <b className="pct-badge">{fmtPct(yourPct)}</b> ({yourShares} share{yourShares !== 1 ? 's' : ''})</span>
+          <span className="crew-meta">your stake: <b className="pct-badge">{fmtEUR2(yourStake)}</b> ({fmtPct(yourPct)})</span>
         </div>
       </div>
       <div className="lottery-stub">
         <span className="closes">Closes in</span>
         <span className="time"><Countdown target={state.drawCloses} small /></span>
-        <span className="closes" style={{ marginTop: 6 }}>Draw #{lottery.drawNo}</span>
+        <span className="closes" style={{ marginTop: 6 }}>Weekly Mega</span>
       </div>
     </div>
   )
@@ -188,12 +370,13 @@ export function CompletedLotteryCard({ lottery }) {
   const crew = crewById(state, lottery.crewId)
   const won = lottery.settlement?.totalWon > 0
   const yourCut = lottery.settlement?.splits.find(s => s.memberId === 'you')?.amount || 0
+  const open = () => nav(dispatch, { name: 'results', lotteryId: lottery.id })
   return (
-    <div className="card completed-card" onClick={() => nav(dispatch, { name: 'results', lotteryId: lottery.id })}>
+    <div className="card completed-card" role="button" tabIndex={0} aria-label={`Draw #${lottery.drawNo} results, ${crew.name}`} onClick={open} onKeyDown={onCardKey(open)}>
       <div className="crew-emoji" style={{ width: 44, height: 44, fontSize: 22 }}>{crew.emoji}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="row-title">Draw #{lottery.drawNo} · {crew.name}</div>
-        <div className="row-sub">{lottery.tickets.length} tickets · {Object.keys(lottery.shares).length} contributors</div>
+        <div className="row-sub">{lottery.tickets.length} tickets · {Object.keys(lottery.contributions).length} contributors</div>
       </div>
       {won ? (
         <div style={{ textAlign: 'right' }}>
@@ -207,22 +390,82 @@ export function CompletedLotteryCard({ lottery }) {
   )
 }
 
-export function Modal({ children, onClose, width }) {
+// Free-amount money input: type any amount (min-clamped), or step by €2.50.
+// The more you put in, the bigger your cut of every win.
+export function StakeInput({ value, min, onChange, label = 'Stake amount' }) {
+  const step = 2.5
+  const [text, setText] = useState(null) // transient while typing
+  const set = v => onChange(Math.round(Math.max(min, v) * 100) / 100)
+  const shown = text ?? (value % 1 === 0 ? String(value) : value.toFixed(2))
+  const commit = () => {
+    const v = parseFloat((text ?? '').replace(',', '.'))
+    setText(null)
+    if (!isNaN(v)) set(v)
+  }
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" style={width ? { maxWidth: width } : undefined} onClick={e => e.stopPropagation()}>
-        {children}
+    <div className="stake-input">
+      <button type="button" aria-disabled={value <= min} aria-label="€2.50 less" onClick={() => value > min && set(value - step)}>−</button>
+      <div className="stake-field">
+        <span aria-hidden="true" className="cur">€</span>
+        <input
+          inputMode="decimal"
+          aria-label={label}
+          value={shown}
+          onChange={e => setText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit() } }}
+        />
       </div>
+      <button type="button" aria-label="€2.50 more" onClick={() => set(value + step)}>+</button>
+      <span className="sr-only" role="status">Stake {value.toFixed(2)} euros</span>
     </div>
   )
 }
 
+export function Modal({ children, onClose, width, label }) {
+  const ref = useRef(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  useEffect(() => {
+    const opener = document.activeElement
+    const node = ref.current
+    node.focus()
+    const onKeyDown = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return }
+      if (e.key !== 'Tab') return
+      const focusables = node.querySelectorAll(
+        'button:not(:disabled), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (!focusables.length) { e.preventDefault(); return }
+      const first = focusables[0], last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => { document.removeEventListener('keydown', onKeyDown, true); opener?.focus?.() }
+  }, [])
+  // Portal to <body>: ancestors with backdrop-filter/transform (e.g. the sticky
+  // header) would otherwise become the containing block for position: fixed
+  return createPortal(
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={label} style={width ? { maxWidth: width } : undefined} onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export function Toast() {
-  const { state } = useStore()
-  if (!state.toast) return null
+  const { state, dispatch } = useStore()
   return (
-    <div className="toast">
-      <span>{state.toast.icon}</span> {state.toast.text}
+    <div role="status" aria-live="polite">
+      {state.toast && (
+        <div className="toast">
+          <span aria-hidden="true">{state.toast.icon}</span> {state.toast.text}
+          <button className="toast-close" aria-label="Dismiss notification" onClick={() => dispatch({ type: 'toast', toast: null })}>✕</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -237,7 +480,7 @@ export function Confetti({ count = 120 }) {
     rot: Math.random() * 360,
   }))
   return (
-    <div className="confetti">
+    <div className="confetti" aria-hidden="true">
       {pieces.map((p, i) => (
         <i key={i} style={{ left: `${p.left}%`, background: p.color, animationDelay: `${p.delay}s`, animationDuration: `${p.dur}s`, transform: `rotate(${p.rot}deg)` }} />
       ))}
@@ -283,14 +526,14 @@ export function FakeQR() {
     }
     return ((i * 7919 + r * 31 + c * 17) % 5) < 2
   })
-  return <div className="qr">{cells.map((on, i) => <i key={i} className={on ? '' : 'off'} />)}</div>
+  return <div className="qr" role="img" aria-label="QR code for the invite link (demo)">{cells.map((on, i) => <i key={i} className={on ? '' : 'off'} />)}</div>
 }
 
 export function Footer() {
   return (
-    <div className="footer container">
+    <footer className="footer container">
       <div><b>LuckyCrew</b> · Group Play design prototype · dummy data, no real money, no real draws</div>
       <div>Play responsibly · 18+ · Design exercise by Jim (Dimitris Zoitas) · July 2026</div>
-    </div>
+    </footer>
   )
 }
