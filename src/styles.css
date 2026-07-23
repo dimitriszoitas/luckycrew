@@ -1009,13 +1009,14 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
-/* ── Responsive: compact wrapping header ────────────────────────────────── */
-@media (max-width: 700px) {
-  .topbar-inner { flex-wrap: wrap; gap: 4px 8px; padding: 8px 0; }
+/* ── Responsive header: one row; secondary controls fold into the avatar menu */
+.mobile-only { display: none !important; }
+@media (max-width: 760px) {
+  .hide-mobile { display: none !important; }
+  .mobile-only { display: flex !important; }
   .logo { font-size: 19px; }
-  .nav-link { margin-left: 0; padding: 8px 10px; font-size: 13px; }
   .wallet-chip { padding: 9px 12px; font-size: 13px; }
-  html { scroll-padding-top: 130px; } /* two-row sticky header */
+  .topbar-inner { gap: 10px; }
 }
 
 /* ── Responsive: single-column mode ─────────────────────────────────────── */

@@ -70,7 +70,7 @@ export function Header() {
           <span><span className="lucky">Lucky</span>Crew</span>
         </button>
         <button
-          className="nav-link"
+          className="nav-link hide-mobile"
           aria-current={state.route.name === 'exercise' ? 'page' : undefined}
           onClick={() => nav(dispatch, { name: 'exercise' })}
         >
@@ -80,10 +80,10 @@ export function Header() {
         <button className="wallet-chip" onClick={() => nav(dispatch, { name: 'wallet' })} aria-label={`Wallet, balance ${fmtEUR2(state.wallet.balance)}`}>
           <span aria-hidden="true">💶</span> <AnimatedNumber value={state.wallet.balance} format={v => fmtEUR2(v)} />
         </button>
-        <button className="icon-btn" aria-label="Accessibility options" aria-haspopup="dialog" onClick={() => setShowA11y(true)}>
+        <button className="icon-btn hide-mobile" aria-label="Accessibility options" aria-haspopup="dialog" onClick={() => setShowA11y(true)}>
           <span aria-hidden="true">♿</span>
         </button>
-        <button className="icon-btn" onClick={() => dispatch({ type: 'theme' })} aria-label={state.theme === 'dark' ? 'Switch to corporate mode' : 'Switch to playful mode'}>
+        <button className="icon-btn hide-mobile" onClick={() => dispatch({ type: 'theme' })} aria-label={state.theme === 'dark' ? 'Switch to corporate mode' : 'Switch to playful mode'}>
           <span aria-hidden="true">{state.theme === 'dark' ? '🏛️' : '🎮'}</span>
         </button>
         <div className="avatar-menu-wrap" ref={menuRef}>
@@ -99,6 +99,16 @@ export function Header() {
                   <div className="row-sub">jim@luckycrew.app</div>
                 </div>
               </div>
+              <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'exercise' }) }}>
+                Exercise Details
+              </button>
+              <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); setShowA11y(true) }}>
+                Accessibility
+              </button>
+              <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); dispatch({ type: 'theme' }) }}>
+                {state.theme === 'dark' ? 'Corporate mode' : 'Playful mode'}
+              </button>
+              <div className="sep mobile-only" aria-hidden="true" />
               <button role="menuitem" onClick={() => demo('Profile')}>Profile</button>
               <button role="menuitem" onClick={() => demo('Settings')}>Settings</button>
               <button role="menuitem" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'wallet' }) }}>Wallet</button>
