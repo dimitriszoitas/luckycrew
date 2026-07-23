@@ -165,7 +165,7 @@ export default function Home() {
 
       <div className="container home-main">
         <h2 className="section-title lg">My Lotteries</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
           <div className="tabs" role="group" aria-label="Filter lotteries">
             <button className={`tab ${lotTab === 'open' ? 'active' : ''}`} aria-pressed={lotTab === 'open'} onClick={() => setLotTab('open')}>Open ({openLots.length})</button>
             <button className={`tab ${lotTab === 'locked' ? 'active' : ''}`} aria-pressed={lotTab === 'locked'} onClick={() => setLotTab('locked')}>Locked ({lockedLots.length})</button>
