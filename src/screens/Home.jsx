@@ -1,20 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore, isMemberOf, nav } from '../store.jsx'
-import { GAME, fmtEUR, fmtEUR2 } from '../game.js'
-import { AnimatedNumber, Countdown, CrewCard, CrewTableRow, LotteryCard, CompletedLotteryCard, Sparkles } from '../ui.jsx'
+import { GAME, fmtEUR, fmtEUR2, fmtNum } from '../game.js'
+import { AnimatedNumber, Countdown, CrewCard, CrewTableRow, LotteryCard, CompletedLotteryCard, Sparkles, MultiplierChip } from '../ui.jsx'
 
 // Live activity ticker: recent wins, entries and platform stats on a loop.
 // Two identical sequences make the marquee seamless; the copy is aria-hidden.
 function Ticker() {
   const items = [
-    ['🏆', <>Golden Tickets won <b>€2,500</b> · 4&thinsp;+&thinsp;★ · draw #212</>],
-    ['🎉', <>Office Legends won <b>€150.00</b> · draw #213</>],
+    ['🏆', <>Golden Tickets won <b>€2.500</b> · 4&thinsp;+&thinsp;★ · draw #212</>],
+    ['🎉', <>Office Legends won <b>€150,00</b> · draw #213</>],
     ['🎟️', <>Night Owls just entered draw #214</>],
-    ['💶', <><b>€48,210</b> shared across crews last week</>],
-    ['⚡', <><b>1,872</b> crews · <b>12,438</b> players in tonight</>],
+    ['💶', <><b>€48.210</b> shared across crews last week</>],
+    ['⚡', <><b>1.872</b> crews · <b>12.438</b> players in tonight</>],
     ['🍀', <>Jackpot Chasers on a 3-draw winning streak</>],
-    ['🌀', <>Rollover Club at <b>€1,495</b> all-time winnings</>],
-    ['🚀', <>Tonight's jackpot · <b>€1,250,000</b> · Star 5 draw #214</>],
+    ['🌀', <>Rollover Club at <b>€1.495</b> all-time winnings</>],
+    ['🚀', <>Mega pot rolling for a 3rd week · <b>{fmtEUR(GAME.jackpot)}+</b> · Star 5 draw #214</>],
   ]
   const seq = hidden => (
     <div className="ticker-seq" aria-hidden={hidden || undefined}>
@@ -60,14 +60,15 @@ function QuickDrawCard({ q, onJoin }) {
   return (
     <div className="quick-card">
       <div className="quick-head">
-        <span className="quick-name"><span aria-hidden="true">⚡</span> Quick Draw</span>
+        <span className="quick-name">Quick Draw</span>
         {q.joined > 0 && <span className="you-in-chip">✓ You're in{q.joined > 1 ? ` ×${q.joined}` : ''}</span>}
         <span className="quick-time">{time}</span>
       </div>
       <div className="quick-pot"><AnimatedNumber value={q.pot} format={v => fmtEUR2(v)} /> <span className="pot-suffix">pot</span></div>
       <div className="quick-meta"><AnimatedNumber value={q.crews} format={v => Math.round(v)} /> crews in · closes in <Countdown target={q.closesAt} small /></div>
+      <div style={{ marginTop: 8 }}><MultiplierChip x={q.multiplier} small /></div>
       <button className="btn btn-outline-gold btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={onJoin}>
-        {q.joined > 0 ? 'Join again' : 'Join'}
+        Join Lottery
       </button>
     </div>
   )
@@ -127,25 +128,28 @@ export default function Home() {
         <Sparkles count={34} dots={40} />
         {state.theme === 'light' && <AmbientConfetti />}
         <div className="container" style={{ position: 'relative' }}>
-          <div className="hero">
-            <Sparkles count={16} dots={14} />
-            <div className="hero-content">
-              <div className="hero-kicker" style={{ color: 'var(--money)' }}>
-                <span className="dot" /> Weekly Mega · {GAME.name} · Draw #214 · Tonight 21:00
-                {ongoing.length > 0 && <span className="you-in-chip">✓ You're in · {ongoing.length} crew{ongoing.length > 1 ? 's' : ''}</span>}
-              </div>
-              <div className="pot-label" style={{ marginTop: 10 }}>Current pot</div>
-              <h1 className="jackpot"><AnimatedNumber value={Math.floor(state.mega.pot)} format={v => fmtEUR(Math.floor(v))} /></h1>
-              <div className="hero-sub">
-                The Mega pot <b style={{ color: 'var(--text)' }}>grows with every crew that joins.</b> Crews share tickets and split every win, automatically.
-              </div>
-              <div className="hero-row">
-                <Countdown target={state.drawCloses} />
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button className="btn btn-gold btn-lg gold-pulse" onClick={() => dispatch({ type: 'openJoinLottery' })}>
-                    {ongoing.length > 0 ? 'Join Again' : 'Join a Lottery'}
-                  </button>
-                  <button className="btn btn-ghost btn-lg" onClick={() => { const el = document.getElementById('discover-title'); el?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); el?.focus({ preventScroll: true }) }}>Find a Crew</button>
+          {/* wrapper carries the golden slab that peeks out under the card */}
+          <div className="hero-wrap">
+            <div className="hero">
+              <Sparkles count={16} dots={14} />
+              <div className="hero-content">
+                <div className="hero-kicker" style={{ color: 'var(--money)' }}>
+                  <span className="dot" /> Weekly Mega · {GAME.name} · Draw #214 · Tonight 21:00
+                  {ongoing.length > 0 && <span className="you-in-chip">✓ You're in · {ongoing.length} crew{ongoing.length > 1 ? 's' : ''}</span>}
+                </div>
+                <div className="pot-label" style={{ marginTop: 10 }}>Current pot</div>
+                <h1 className="jackpot"><AnimatedNumber value={Math.floor(state.mega.pot)} format={v => fmtEUR(Math.floor(v))} /></h1>
+                <div className="hero-sub">
+                  The Mega pot <b style={{ color: 'var(--text)' }}>grows with every crew that joins.</b> Crews share tickets and split every win, automatically.
+                </div>
+                <div className="hero-row">
+                  <Countdown target={state.drawCloses} />
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <button className="btn btn-gold btn-lg gold-pulse" onClick={() => dispatch({ type: 'openJoinLottery' })}>
+                      Join Lottery
+                    </button>
+                    <button className="btn btn-ghost btn-lg" onClick={() => { const el = document.getElementById('discover-title'); el?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); el?.focus({ preventScroll: true }) }}>Find a Crew</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -156,7 +160,7 @@ export default function Home() {
             ))}
           </div>
           <div className="hero-proof">
-            <span><b><AnimatedNumber value={state.mega.crews} format={v => Math.round(v).toLocaleString('en-IE')} /></b> crews in tonight's Mega</span> · <span><b>12,438</b> players in</span> · <span><b>€48,210</b> shared last week</span>
+            <span><b><AnimatedNumber value={state.mega.crews} format={v => fmtNum(Math.round(v))} /></b> crews in tonight's Mega</span> · <span><b>12.438</b> players in</span> · <span><b>€48.210</b> shared last week</span>
           </div>
         </div>
       </div>
@@ -183,7 +187,7 @@ export default function Home() {
         {lotTab !== 'completed' && (
           tabLots.length === 0 ? (
             <div className="card card-pad empty" style={{ marginBottom: 46 }}>
-              {lotTab === 'open' ? 'No open entries. Hit "Join a Lottery" above to get a crew into tonight\'s draw.' : 'Nothing locked right now. Entries lock shortly before their draw.'}
+              {lotTab === 'open' ? 'No open entries. Hit "Join Lottery" above to get a crew into tonight\'s draw.' : 'Nothing locked right now. Entries lock shortly before their draw.'}
             </div>
           ) : (
             <div className="lottery-carousel" ref={lotsRef} onScroll={updateLotArrows}>
@@ -202,7 +206,11 @@ export default function Home() {
         <hr className="section-divider" />
 
         <div className="section-head">
-          <h2 className="section-title lg" style={{ flex: 1, marginBottom: 0 }}>My Crews</h2>
+          <h2 className="section-title lg" style={{ marginBottom: 0 }}>My Crews</h2>
+          <div className="spacer" />
+          <button className="btn btn-outline btn-sm" onClick={() => nav(dispatch, { name: 'create' })}>
+            <span aria-hidden="true">＋</span> Create a crew
+          </button>
           <div className="carousel-nav">
             <button className="icon-btn" aria-label="Previous crews" aria-disabled={!arrows.prev} onClick={() => arrows.prev && scrollCrews(-1)}>←</button>
             <button className="icon-btn" aria-label="Next crews" aria-disabled={!arrows.next} onClick={() => arrows.next && scrollCrews(1)}>→</button>
@@ -230,7 +238,7 @@ export default function Home() {
           </div>
 
           <p className="how-line">
-            How Group Play works: a crew fills a pot in shares → the pot buys tickets → everyone owns a slice of every ticket → winnings are split by ownership, instantly and automatically. No treasurer, full ledger.
+            How Group Play works: a crew of up to six picks its tickets → every member adds a number and pays the same share → the entry locks once everyone has paid → wins split equally, and boosts pay their owner at the draw multiplier. No treasurer, full ledger.
           </p>
         </div>
       </section>

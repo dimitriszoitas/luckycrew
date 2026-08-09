@@ -1,16 +1,14 @@
 import React from 'react'
 import { useStore, nav, toast, crewById, ongoingForCrew, nextDrawFor } from '../store.jsx'
-import { fmtEUR2, fmtPct } from '../game.js'
+import { fmtEUR2 } from '../game.js'
 import { Balls, Confetti } from '../ui.jsx'
-
-const SLICE_COLORS = ['#fbbf24', '#4f5fe8', '#93c5fd', '#f59e0b', '#fde047', '#8fa3ff', '#d97706', '#60a5fa', '#fcd34d']
 
 export default function Results({ lotteryId }) {
   const { state, dispatch } = useStore()
   const lottery = state.lotteries.find(l => l.id === lotteryId)
   if (!lottery || !lottery.settlement) return null
   const crew = crewById(state, lottery.crewId)
-  const { scored, totalWon, splits, remainder } = lottery.settlement
+  const { scored, totalWon, splits, remainder, boostsPay, boostTotal, multiplier } = lottery.settlement
   const won = totalWon > 0
   const yourCut = splits.find(s => s.memberId === 'you')?.amount || 0
   const winningTickets = scored.filter(s => s.prize > 0)
@@ -26,7 +24,7 @@ export default function Results({ lotteryId }) {
   return (
     <div className="container" style={{ maxWidth: 820 }}>
       {won && <Confetti />}
-      <button className="back-link" onClick={() => nav(dispatch, { name: 'crew', crewId: crew.id })}>← {crew.emoji} {crew.name}</button>
+      <button className="back-link" onClick={() => nav(dispatch, { name: 'crew', crewId: crew.id })}>← {crew.name}</button>
 
       <div className="win-banner" style={!won ? { borderColor: 'var(--border)', boxShadow: 'var(--card-shadow)' } : undefined}>
         <div className="hero-kicker" style={{ justifyContent: 'center' }}><span className="dot" /> Draw #{lottery.drawNo} · settled</div>
@@ -35,7 +33,7 @@ export default function Results({ lotteryId }) {
             <h1 style={{ fontSize: 26, marginBottom: 4 }}>{crew.emoji} {crew.name} WON!</h1>
             <div className="win-amount">{fmtEUR2(totalWon)}</div>
             <p style={{ color: 'var(--text-dim)', marginTop: 8 }}>
-              Split automatically across {splits.length} contributors. Your cut <b style={{ color: 'var(--money)' }}>{fmtEUR2(yourCut)}</b> is already in your wallet. ⚡
+              Split equally across {splits.length} member{splits.length > 1 ? 's' : ''}. Your cut <b style={{ color: 'var(--money)' }}>{fmtEUR2(yourCut)}</b> is already in your wallet. ⚡
             </p>
           </>
         ) : (
@@ -54,30 +52,36 @@ export default function Results({ lotteryId }) {
 
       {won && (
         <div className="card card-pad" style={{ marginBottom: 18 }}>
-          <h2 className="section-title"><span aria-hidden="true">⚡</span> The split: automatic, proportional, on-ledger</h2>
-          <div className="split-bar" aria-hidden="true" style={{ marginBottom: 14 }}>
-            {splits.map((s, i) => (
-              <i key={s.memberId} title={`${s.name} ${fmtPct(s.pct)}`} style={{ width: `${s.pct * 100}%`, background: SLICE_COLORS[i % SLICE_COLORS.length] }} />
-            ))}
-          </div>
+          <h2 className="section-title"><span aria-hidden="true">⚡</span> The split: equal shares, boosts on top</h2>
           <table className="split">
             <thead>
-              <tr><th scope="col">Member</th><th scope="col">Stake</th><th scope="col">Ownership</th><th scope="col" style={{ textAlign: 'right' }}>Credited</th></tr>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Share paid</th>
+                <th scope="col">Equal cut</th>
+                <th scope="col">Boost {multiplier}x</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Credited</th>
+              </tr>
             </thead>
             <tbody>
-              {splits.map((s, i) => (
+              {splits.map(s => (
                 <tr key={s.memberId} className={s.memberId === 'you' ? 'you' : ''}>
                   <td><span style={{ marginRight: 8 }}>{s.avatar}</span>{s.name}{s.memberId === 'you' && ' (you)'}</td>
-                  <td>{fmtEUR2(s.stake)}</td>
-                  <td><b style={{ color: 'var(--text)' }}><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, marginRight: 6, background: SLICE_COLORS[i % SLICE_COLORS.length], border: '1px solid var(--text-dim)' }} /> {fmtPct(s.pct)}</b></td>
+                  <td>{fmtEUR2(s.share)}</td>
+                  <td><b style={{ color: 'var(--text)' }}>{fmtEUR2(s.base)}</b></td>
+                  <td>{s.boost > 0 ? (s.boostAmount > 0 ? <b style={{ color: 'var(--money)' }}>+{fmtEUR2(s.boostAmount)}</b> : <span className="row-sub">{fmtEUR2(s.boost)} · no top tier</span>) : <span className="row-sub">none</span>}</td>
                   <td className="amt">+{fmtEUR2(s.amount)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {remainder > 0 && (
-            <div className="row-sub" style={{ marginTop: 10 }}>Rounding remainder of {fmtEUR2(remainder)} carried to the crew's next pot, on the ledger like everything else.</div>
-          )}
+          <div className="row-sub" style={{ marginTop: 10, lineHeight: 1.7 }}>
+            Everyone paid the same share, so everyone takes the same cut: {fmtEUR2(splits[0]?.base || 0)} each.
+            {boostsPay
+              ? ` Top tier hit, so boosts paid out at ${multiplier}x: ${fmtEUR2(boostTotal)} on top.`
+              : ' Boosts pay out only on 5 numbers or the jackpot, so they sit this one out.'}
+            {remainder > 0 && ` Rounding remainder of ${fmtEUR2(remainder)} carried to the crew's next pot.`}
+          </div>
         </div>
       )}
 
@@ -87,7 +91,7 @@ export default function Results({ lotteryId }) {
           {scored.map((s, i) => (
             <div className="ticket-card" key={s.ticket.id} style={s.prize > 0 ? { borderColor: 'color-mix(in srgb, var(--gold) 45%, transparent)', boxShadow: 'var(--glow-lime)' } : undefined}>
               <span className="ticket-id">#{String(i + 1).padStart(2, '0')}</span>
-              <Balls nums={s.ticket.nums} star={s.ticket.star} size="sm" result={lottery.result} />
+              <Balls nums={s.ticket.nums} stars={s.ticket.stars} size="sm" result={lottery.result} />
               <span className="ticket-prize" style={{ color: s.prize > 0 ? 'var(--money)' : 'var(--text-faint)' }}>
                 {s.prize > 0 ? `${s.tier.label} · +${fmtEUR2(s.prize)}` : `${s.matched.length} match${s.matched.length !== 1 ? 'es' : ''}`}
               </span>
@@ -100,7 +104,7 @@ export default function Results({ lotteryId }) {
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 30, flexWrap: 'wrap' }}>
         {isCaptain && !hasOngoing && (
           <button className="btn btn-gold btn-lg gold-pulse" onClick={playAgain}>
-            🎟️ Enter draw #{nextDraw} with {crew.name}
+            Enter draw #{nextDraw} with {crew.name}
           </button>
         )}
         <button className="btn btn-ghost btn-lg" onClick={() => nav(dispatch, { name: 'wallet' })}>See wallet</button>

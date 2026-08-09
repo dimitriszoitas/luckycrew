@@ -40,7 +40,8 @@ export default function Draw({ lotteryId }) {
   const result = resultRef.current
 
   const finish = () => {
-    const settlement = settleDraw(lottery, crew, resultRef.current)
+    // the jackpot pays whatever the rolling Mega pot has reached by draw time
+    const settlement = settleDraw(lottery, crew, resultRef.current, Math.floor(state.mega.pot))
     dispatch({ type: 'settle', lotteryId, settlement })
     nav(dispatch, { name: 'results', lotteryId })
   }
@@ -53,7 +54,12 @@ export default function Draw({ lotteryId }) {
       <div className="draw-stage">
         <div className="hero-kicker" style={{ justifyContent: 'center' }}><span className="dot" /> {GAME.name} · Draw #{lottery.drawNo} · Live</div>
         <h1 className="draw-title">{crew.emoji} {crew.name} is watching</h1>
-        <p style={{ color: 'var(--text-dim)', marginTop: 6 }}>{lottery.tickets.length} crew tickets in play · every contributor shares every one</p>
+        <p style={{ color: 'var(--text-dim)', marginTop: 6 }}>
+          {lottery.tickets.length} crew ticket{lottery.tickets.length !== 1 ? 's' : ''} · {lottery.tickets[0]?.nums.length || 0} numbers each · every paid member plays all of them
+        </p>
+        <p className="row-sub" style={{ marginTop: 4 }}>
+          5 numbers and 1 star are coming out. Every one of them that lands inside a crew ticket is a match.
+        </p>
 
         {phase === 'ready' && (
           <div style={{ margin: '38px 0 10px' }}>
@@ -63,8 +69,8 @@ export default function Draw({ lotteryId }) {
               <div className="ball lg ghost">★</div>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 30, flexWrap: 'wrap' }}>
-              <button className="btn btn-primary btn-lg pulse-glow" onClick={() => start(true)}>▶ Start the draw</button>
-              <button className="btn btn-ghost" onClick={() => start(false)} title="True random, most draws win nothing">🎲 Fair random draw</button>
+              <button className="btn btn-primary btn-lg pulse-glow" onClick={() => start(true)}>Start the draw</button>
+              <button className="btn btn-ghost" onClick={() => start(false)} title="True random, most draws win nothing">Fair random draw</button>
             </div>
             <div className="row-sub" style={{ marginTop: 14 }}>Demo: "Start" guarantees a decent hit so you can see the split · "Fair" is honest randomness</div>
           </div>
@@ -91,12 +97,12 @@ export default function Draw({ lotteryId }) {
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--cyan)', marginBottom: 14 }}>
               All numbers drawn ✨ Matches light up below.
             </div>
-            <button className="btn btn-money btn-lg" onClick={finish}>🏆 See results &amp; the split</button>
+            <button className="btn btn-money btn-lg" onClick={finish}>See results &amp; the split</button>
           </div>
         )}
         {(phase === 'count' || (phase === 'reveal' && revealed < GAME.pickCount + 1)) && (
           <div style={{ marginTop: 16 }}>
-            <button className="btn btn-ghost btn-sm" onClick={skip}>⏭ Skip animation</button>
+            <button className="btn btn-ghost btn-sm" onClick={skip}>Skip animation</button>
           </div>
         )}
         <div role="status" className="sr-only">
@@ -112,7 +118,7 @@ export default function Draw({ lotteryId }) {
             {lottery.tickets.map((t, i) => (
               <div className="ticket-card" key={t.id}>
                 <span className="ticket-id">#{String(i + 1).padStart(2, '0')}</span>
-                <Balls nums={t.nums} star={t.star} size="sm" result={phase === 'reveal' && revealed >= GAME.pickCount + 1 ? result : null} />
+                <Balls nums={t.nums} stars={t.stars} size="sm" result={phase === 'reveal' && revealed >= GAME.pickCount + 1 ? result : null} />
               </div>
             ))}
           </div>

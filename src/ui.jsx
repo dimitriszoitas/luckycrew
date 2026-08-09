@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useStore, nav, toast, crewById, potTotal, isMemberOf, crewLuck, crewEarnings } from './store.jsx'
-import { GAME, fmtEUR, fmtEUR2, fmtPct } from './game.js'
+import { useStore, nav, toast, crewById, isMemberOf, crewLuck, crewEarnings, entrySize, shareDue, paidMembers, hasPaid } from './store.jsx'
+import { GAME, fmtEUR, fmtEUR2, SIZE_TABLE, mainCount, starCount } from './game.js'
 
 // Keyboard activation for clickable cards (SC 2.1.1)
 export const onCardKey = handler => e => {
@@ -76,9 +76,16 @@ export function Header() {
         >
           Exercise Details
         </button>
+        <button
+          className="nav-link hide-mobile"
+          aria-current={state.route.name === 'process' ? 'page' : undefined}
+          onClick={() => nav(dispatch, { name: 'process' })}
+        >
+          Design Process
+        </button>
         <div className="spacer" />
         <button className="wallet-chip" onClick={() => nav(dispatch, { name: 'wallet' })} aria-label={`Wallet, balance ${fmtEUR2(state.wallet.balance)}`}>
-          <span aria-hidden="true">💶</span> <AnimatedNumber value={state.wallet.balance} format={v => fmtEUR2(v)} />
+          <AnimatedNumber value={state.wallet.balance} format={v => fmtEUR2(v)} />
         </button>
         <button className="icon-btn hide-mobile" aria-label="Accessibility options" aria-haspopup="dialog" onClick={() => setShowA11y(true)}>
           <span aria-hidden="true">♿</span>
@@ -101,6 +108,9 @@ export function Header() {
               </div>
               <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'exercise' }) }}>
                 Exercise Details
+              </button>
+              <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'process' }) }}>
+                Design Process
               </button>
               <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); setShowA11y(true) }}>
                 Accessibility
@@ -227,21 +237,59 @@ export function Countdown({ target, small }) {
   )
 }
 
-export function Balls({ nums, star, result, size = '' }) {
+// A crew ticket: as many main numbers as the crew has members plus five,
+// then one or three stars. Sizes vary, so the row wraps.
+export function Balls({ nums, star, stars, result, size = '' }) {
+  const starList = stars || (star != null ? [star] : [])
   const matched = result ? nums.filter(n => result.nums.includes(n)) : null
-  const label = `Numbers ${nums.join(', ')}, star ${star}` +
-    (result ? `. Matched: ${matched.join(', ') || 'none'}${result.star === star ? ', star matched' : ''}` : '')
+  const label = `Numbers ${nums.join(', ')}, star${starList.length > 1 ? 's' : ''} ${starList.join(', ')}` +
+    (result ? `. Matched: ${matched.join(', ') || 'none'}${starList.includes(result.star) ? ', star matched' : ''}` : '')
   return (
     <div className="ball-row" role="img" aria-label={label}>
       <span aria-hidden="true" style={{ display: 'contents' }}>
         {nums.map(n => (
-          <div key={n} className={`ball ${size} ${result && result.nums.includes(n) ? 'hit' : ''}`}>{n}</div>
+          <div key={n} className={`ball ${size} ${result ? (result.nums.includes(n) ? 'hit' : 'miss') : ''}`}>{n}</div>
         ))}
         <span className="plus-sep">+</span>
-        <div className={`ball star ${size} ${result && result.star === star ? 'hit' : ''}`}>{star}</div>
+        {starList.map(s => (
+          <div key={s} className={`ball star ${size} ${result ? (result.star === s ? 'hit' : 'miss') : ''}`}>{s}</div>
+        ))}
       </span>
     </div>
   )
+}
+
+// The crew-size promise, as a strip of tiles. Pass onSelect to make it a
+// control: the headline number is the crew size you are choosing.
+export function SizeLadder({ highlight, onSelect }) {
+  return (
+    <div className="size-ladder" role={onSelect ? 'group' : undefined} aria-label={onSelect ? 'Planned crew size' : undefined}>
+      {SIZE_TABLE.map(s => {
+        const on = highlight === s.size
+        const props = onSelect
+          ? { type: 'button', onClick: () => onSelect(s.size), 'aria-pressed': on, 'aria-label': `${s.size} player${s.size > 1 ? 's' : ''}: ${s.main} numbers plus ${s.stars} star${s.stars > 1 ? 's' : ''}, ${fmtEUR2(s.share)} each` }
+          : {}
+        const Tag = onSelect ? 'button' : 'div'
+        return (
+          <Tag key={s.size} className={`size-tile ${on ? 'on' : ''} ${onSelect ? 'pick' : ''}`} {...props}>
+            <div className="size-num">{s.size}</div>
+            <div className="size-head">player{s.size > 1 ? 's' : ''}</div>
+            <div className="size-spec">
+              {s.main} numbers
+              <span>+ {s.stars} star{s.stars > 1 ? 's' : ''}</span>
+            </div>
+            <div className="size-price">{fmtEUR2(s.share)} <span>each</span></div>
+          </Tag>
+        )
+      })}
+    </div>
+  )
+}
+
+// The entry's multiplier, the headline number for boosts
+export function MultiplierChip({ x, small }) {
+  if (!x) return null
+  return <span className={`mult-chip ${small ? 'sm' : ''}`} aria-label={`Boost multiplier ${x} times`}>{x}x boost</span>
 }
 
 export function StatusChip({ status }) {
@@ -262,7 +310,7 @@ export function FacePile({ members, max = 5 }) {
 export function LuckBadge({ luck, dim }) {
   return (
     <span className={`luck-badge ${dim ? 'dim' : ''}`} aria-label={`${luck.pct}% lucky: won ${luck.won} of ${luck.played} draws played`}>
-      <span aria-hidden="true">🍀</span> {luck.pct}% lucky
+      {luck.pct}% lucky
     </span>
   )
 }
@@ -283,8 +331,8 @@ export function CrewCard({ crew, joinLotteryCta }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="crew-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{crew.name}</div>
           <div className="crew-meta" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {crew.members.length} member{crew.members.length !== 1 ? 's' : ''} · {crew.privacy === 'public' ? '🌍 Public' : '🔗 Invite only'}
-            {isCaptain && ' · ⭐ your crew'}
+            {crew.members.length}/{GAME.maxCrew} members · {mainCount(crew.members.length)} numbers
+            {isCaptain && ' · your crew'}
           </div>
         </div>
         <LuckBadge luck={luck} />
@@ -300,7 +348,7 @@ export function CrewCard({ crew, joinLotteryCta }) {
             className="btn btn-outline btn-sm"
             onClick={e => { e.stopPropagation(); dispatch({ type: 'openJoinLottery', crewId: crew.id }) }}
           >
-            Join crew
+            Join Lottery
           </button>
         )}
       </div>
@@ -320,12 +368,16 @@ export function CrewTableRow({ crew }) {
         <div className="row-title">{crew.name}</div>
         <div className="row-sub">captain {crew.members.find(m => m.id === crew.captainId)?.name || 'unknown'}</div>
       </div>
-      <div className="trow-cell">{crew.members.length} members</div>
+      <div className="trow-cell">{crew.members.length}/{GAME.maxCrew} members</div>
       <div className="trow-cell"><LuckBadge luck={luck} /></div>
-      <div className="trow-cell dim">{luck.won}/{luck.played} draws won</div>
-      <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); nav(dispatch, { name: 'join', crewId: crew.id }) }}>
-        Join crew
-      </button>
+      <div className="trow-cell dim">{mainCount(crew.members.length)} numbers + {starCount(crew.members.length)} star{starCount(crew.members.length) > 1 ? 's' : ''}</div>
+      {crew.members.length >= GAME.maxCrew ? (
+        <span className="chip" style={{ whiteSpace: 'nowrap' }}>Crew full</span>
+      ) : (
+        <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); nav(dispatch, { name: 'join', crewId: crew.id }) }}>
+          Join crew
+        </button>
+      )}
     </div>
   )
 }
@@ -335,10 +387,14 @@ export function CrewTableRow({ crew }) {
 export function LotteryCard({ lottery }) {
   const { state, dispatch } = useStore()
   const crew = crewById(state, lottery.crewId)
-  const pot = potTotal(lottery)
-  const yourStake = lottery.contributions.you || 0
-  const yourPct = pot ? yourStake / pot : 0
+  const size = entrySize(state, lottery)
+  const due = shareDue(state, lottery)
+  const paid = paidMembers(state, lottery)
+  const youPaid = hasPaid(state, lottery, 'you')
+  const yourBoost = lottery.boosts?.you || 0
   const megaPot = Math.floor(state.mega.pot)
+  // equal cut of the jackpot, plus your own boost at the entry's multiplier
+  const maxWin = Math.floor(megaPot / Math.max(1, size) + yourBoost * lottery.multiplier)
   const open = () => nav(dispatch, { name: 'lottery', lotteryId: lottery.id })
   return (
     <div className="lottery-card" role="button" tabIndex={0} aria-label={`Draw #${lottery.drawNo}, ${crew.name}`} onClick={open} onKeyDown={onCardKey(open)}>
@@ -346,8 +402,9 @@ export function LotteryCard({ lottery }) {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="crew-title">Weekly Mega · Draw #{lottery.drawNo}</div>
           <StatusChip status={lottery.status} />
+          <MultiplierChip x={lottery.multiplier} small />
         </div>
-        <div className="crew-meta" style={{ marginTop: 4, fontSize: 14 }}><b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b></div>
+        <div className="crew-meta" style={{ marginTop: 4, fontSize: 14 }}><b style={{ color: 'var(--text)' }}>{crew.emoji} {crew.name}</b> · {mainCount(size)} numbers + {starCount(size)} star{starCount(size) > 1 ? 's' : ''}</div>
         <div className="max-win-line">
           <div className="mw">
             <div className="k">Mega pot</div>
@@ -355,14 +412,20 @@ export function LotteryCard({ lottery }) {
           </div>
           <div className="mw">
             <div className="k">Your max win</div>
-            <div className="v you">{yourPct > 0 ? <AnimatedNumber value={Math.floor(megaPot * yourPct)} format={v => fmtEUR(Math.floor(v))} /> : 'buy shares'}</div>
+            <div className="v you">{youPaid ? <AnimatedNumber value={maxWin} format={v => fmtEUR(Math.floor(v))} /> : 'pay your share'}</div>
           </div>
         </div>
-        <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(yourPct * 100)} aria-label={`Your share of the pot: ${fmtPct(yourPct)}`} style={{ marginBottom: 8, height: 10 }}><i style={{ width: `${yourPct * 100}%` }} aria-hidden="true" /></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span className="crew-meta"><b style={{ color: 'var(--text)' }}>{fmtEUR2(pot)}</b> in the pot · {lottery.tickets.length} tickets</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+          <span className={`ready-pill ${paid.length === crew.members.length ? 'on' : ''}`}>
+            {paid.length === crew.members.length ? '✓ all paid' : `${paid.length} of ${crew.members.length} paid`}
+          </span>
+          <span className="crew-meta">{lottery.tickets.length} ticket{lottery.tickets.length !== 1 ? 's' : ''} · {fmtEUR2(due)} each</span>
           <div className="spacer" />
-          <span className="crew-meta">your stake: <b className="pct-badge">{fmtEUR2(yourStake)}</b> ({fmtPct(yourPct)})</span>
+          <span className="crew-meta">
+            {youPaid
+              ? <>your share <b className="pct-badge">{fmtEUR2(lottery.contributions.you || 0)}</b>{yourBoost > 0 && <> · boost <b className="pct-badge">{fmtEUR2(yourBoost)}</b></>}</>
+              : <b style={{ color: 'var(--gold)' }}>you owe {fmtEUR2(due)}</b>}
+          </span>
         </div>
       </div>
       <div className="lottery-stub">
@@ -386,7 +449,7 @@ export function CompletedLotteryCard({ lottery }) {
       <div className="crew-emoji" style={{ width: 44, height: 44, fontSize: 22 }}>{crew.emoji}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="row-title">Draw #{lottery.drawNo} · {crew.name}</div>
-        <div className="row-sub">{lottery.tickets.length} tickets · {Object.keys(lottery.contributions).length} contributors</div>
+        <div className="row-sub">{lottery.tickets.length} ticket{lottery.tickets.length !== 1 ? 's' : ''} · {Object.keys(lottery.contributions).length} player{Object.keys(lottery.contributions).length !== 1 ? 's' : ''} paid in</div>
       </div>
       {won ? (
         <div style={{ textAlign: 'right' }}>
@@ -414,7 +477,7 @@ export function StakeInput({ value, min, onChange, label = 'Stake amount' }) {
   }
   return (
     <div className="stake-input">
-      <button type="button" aria-disabled={value <= min} aria-label="€2.50 less" onClick={() => value > min && set(value - step)}>−</button>
+      <button type="button" aria-disabled={value <= min} aria-label="€2,50 less" onClick={() => value > min && set(value - step)}>−</button>
       <div className="stake-field">
         <span aria-hidden="true" className="cur">€</span>
         <input
@@ -426,7 +489,7 @@ export function StakeInput({ value, min, onChange, label = 'Stake amount' }) {
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit() } }}
         />
       </div>
-      <button type="button" aria-label="€2.50 more" onClick={() => set(value + step)}>+</button>
+      <button type="button" aria-label="€2,50 more" onClick={() => set(value + step)}>+</button>
       <span className="sr-only" role="status">Stake {value.toFixed(2)} euros</span>
     </div>
   )

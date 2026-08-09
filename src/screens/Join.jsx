@@ -1,6 +1,6 @@
 import React from 'react'
-import { useStore, nav, toast, isMemberOf, ongoingForCrew, potTotal } from '../store.jsx'
-import { GAME, fmtEUR, fmtEUR2 } from '../game.js'
+import { useStore, nav, toast, isMemberOf, ongoingForCrew, crewIsFull, shareDue, paidMembers } from '../store.jsx'
+import { GAME, fmtEUR, fmtEUR2, mainCount } from '../game.js'
 import { FacePile, Countdown } from '../ui.jsx'
 
 // Invite landing: what a friend sees before joining a crew
@@ -24,7 +24,7 @@ export default function Join({ crewId, preview }) {
       </button>
 
       {preview && (
-        <div className="chip" style={{ marginBottom: 14 }}>👀 Preview: this is what your invitees see</div>
+        <div className="chip" style={{ marginBottom: 14 }}>Preview: this is what your invitees see</div>
       )}
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -38,15 +38,18 @@ export default function Join({ crewId, preview }) {
           <div style={{ display: 'flex', justifyContent: 'center', margin: '18px 0 6px' }}>
             <FacePile members={crew.members} max={7} />
           </div>
-          <div className="crew-meta">{crew.members.length} member{crew.members.length !== 1 ? 's' : ''} already in</div>
+          <div className="crew-meta">
+            {crew.members.length}/{GAME.maxCrew} members in · you would make it {Math.min(GAME.maxCrew, crew.members.length + (member ? 0 : 1))},
+            playing <b style={{ color: 'var(--text)' }}>{mainCount(crew.members.length + (member ? 0 : 1))} numbers</b>
+          </div>
         </div>
 
         <div style={{ padding: '0 26px 26px' }}>
           {ongoing ? (
             <div className="stat-tiles" style={{ marginBottom: 16 }}>
               <div className="stat-tile"><div className="k">Ongoing entry</div><div className="v">Draw #{ongoing.drawNo}</div></div>
-              <div className="stat-tile"><div className="k">Pot so far</div><div className="v">{fmtEUR2(potTotal(ongoing))}</div></div>
-              <div className="stat-tile"><div className="k">Tickets</div><div className="v">{ongoing.tickets.length} 🎫</div></div>
+              <div className="stat-tile"><div className="k">Your share</div><div className="v">{fmtEUR2(shareDue(state, ongoing))}</div></div>
+              <div className="stat-tile"><div className="k">Paid up</div><div className="v">{paidMembers(state, ongoing).length}/{crew.members.length}</div></div>
             </div>
           ) : (
             <p className="crew-meta" style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -58,11 +61,13 @@ export default function Join({ crewId, preview }) {
           </div>
           {member ? (
             <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => nav(dispatch, { name: 'crew', crewId: crew.id })}>You're in. Open the crew →</button>
+          ) : crewIsFull(crew) ? (
+            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} disabled>Crew is full ({GAME.maxCrew} players)</button>
           ) : (
-            <button className="btn btn-gold btn-lg gold-pulse" style={{ width: '100%' }} onClick={join}>🍀 Join {crew.name}</button>
+            <button className="btn btn-gold btn-lg gold-pulse" style={{ width: '100%' }} onClick={join}>Join {crew.name}</button>
           )}
           <div className="row-sub" style={{ textAlign: 'center', marginTop: 12 }}>
-            Joining is free. You choose how much to chip in per draw · winnings split automatically · 18+ play responsibly
+            Joining is free. Everyone pays the same share per draw · wins split equally · 18+ play responsibly
           </div>
         </div>
       </div>

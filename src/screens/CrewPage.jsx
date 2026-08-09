@@ -1,6 +1,7 @@
 import React from 'react'
-import { useStore, nav, toast, ongoingForCrew, nextDrawFor, crewLuck } from '../store.jsx'
-import { FakeQR, FacePile, CompletedLotteryCard, LotteryCard, LuckBadge } from '../ui.jsx'
+import { useStore, nav, toast, ongoingForCrew, nextDrawFor, crewLuck, crewIsFull } from '../store.jsx'
+import { GAME, fmtEUR2, mainCount, starCount, ticketPrice } from '../game.js'
+import { FakeQR, FacePile, CompletedLotteryCard, LotteryCard, LuckBadge, SizeLadder } from '../ui.jsx'
 
 const timeAgo = t => {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000))
@@ -35,11 +36,11 @@ export default function CrewPage({ crewId, justCreated }) {
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: 26 }}>{crew.name}</h1>
-              {isCaptain && <span className="chip captain">⭐ You're captain</span>}
-              <span className="chip">{crew.privacy === 'public' ? '🌍 Public' : '🔗 Invite only'}</span>
+              {isCaptain && <span className="chip captain">You're captain</span>}
+              <span className="chip">{crew.privacy === 'public' ? 'Public' : 'Invite only'}</span>
             </div>
             <div className="crew-meta" style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              Reusable team · {crew.members.length} member{crew.members.length !== 1 ? 's' : ''} · <LuckBadge luck={luck} /> · won {luck.won} of {luck.played} draws
+              {crew.members.length}/{GAME.maxCrew} members · plays <b style={{ color: 'var(--text)' }}>{mainCount(crew.members.length)} numbers + {starCount(crew.members.length)} star{starCount(crew.members.length) > 1 ? 's' : ''}</b> at {fmtEUR2(ticketPrice(crew.members.length))} a ticket · <LuckBadge luck={luck} />
             </div>
           </div>
           <FacePile members={crew.members} max={6} />
@@ -47,13 +48,13 @@ export default function CrewPage({ crewId, justCreated }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
           {!ongoing && isCaptain && (
-            <button className="btn btn-gold gold-pulse" onClick={() => { dispatch({ type: 'enterLottery', crewId: crew.id, drawNo: nextDraw }); toast(dispatch, `${crew.name} entered draw #${nextDraw}. Chip in!`, '🎟️') }}>🎟️ Enter draw #{nextDraw}</button>
+            <button className="btn btn-gold gold-pulse" onClick={() => { dispatch({ type: 'enterLottery', crewId: crew.id, drawNo: nextDraw }); toast(dispatch, `${crew.name} entered draw #${nextDraw}. Chip in!`, '🎟️') }}>Enter draw #{nextDraw}</button>
           )}
           {!ongoing && !isCaptain && (
             <span className="crew-meta" style={{ alignSelf: 'center' }}>The captain opens draw entries. You'll see them here.</span>
           )}
           {ongoing && (
-            <button className="btn btn-primary" onClick={() => nav(dispatch, { name: 'lottery', lotteryId: ongoing.id })}>🎟️ Open ongoing entry · draw #{ongoing.drawNo}</button>
+            <button className="btn btn-primary" onClick={() => nav(dispatch, { name: 'lottery', lotteryId: ongoing.id })}>Open ongoing entry · draw #{ongoing.drawNo}</button>
           )}
         </div>
       </div>
@@ -76,12 +77,21 @@ export default function CrewPage({ crewId, justCreated }) {
         {/* Members */}
         <div className="card card-pad">
           <h2 className="section-title" style={{ fontSize: 18 }}><span aria-hidden="true">👥</span> Members</h2>
-          {crew.members.map(m => (
+          {crew.members.map((m, i) => (
             <div className="row" key={m.id}>
               <div className="member-avatar">{m.avatar}</div>
               <div className="grow">
-                <div className="row-title">{m.name}{m.id === 'you' && ' (you)'} {crew.captainId === m.id && <span className="chip captain" style={{ marginLeft: 6 }}>⭐ Captain</span>}</div>
-                <div className="row-sub">joined {timeAgo(m.joinedAt)}</div>
+                <div className="row-title">{m.name}{m.id === 'you' && ' (you)'} {crew.captainId === m.id && <span className="chip captain" style={{ marginLeft: 6 }}>Captain</span>}</div>
+                <div className="row-sub">joined {timeAgo(m.joinedAt)} · adds number #{GAME.pickCount + i + 1}</div>
+              </div>
+            </div>
+          ))}
+          {Array.from({ length: GAME.maxCrew - crew.members.length }, (_, i) => (
+            <div className="row empty-seat" key={`seat${i}`}>
+              <div className="member-avatar ghost" aria-hidden="true">+</div>
+              <div className="grow">
+                <div className="row-title">Free seat</div>
+                <div className="row-sub">one more number on every ticket, and a cheaper share for everyone</div>
               </div>
             </div>
           ))}
@@ -89,6 +99,11 @@ export default function CrewPage({ crewId, justCreated }) {
 
         {/* Invite */}
         <InviteBlock crew={crew} />
+      </div>
+
+      <div className="card card-pad" style={{ marginBottom: 18 }}>
+        <h2 className="section-title" style={{ fontSize: 18 }}><span aria-hidden="true">🎫</span> What this crew's ticket looks like</h2>
+        <SizeLadder highlight={Math.min(GAME.maxCrew, crew.members.length)} />
       </div>
 
       {history.length > 0 && (
@@ -117,13 +132,17 @@ function InviteBlock({ crew }) {
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <button className="btn btn-primary btn-sm" onClick={copy}>Copy link</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => nav(dispatch, { name: 'join', crewId: crew.id, preview: true })}>👀 Preview landing</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => nav(dispatch, { name: 'join', crewId: crew.id, preview: true })}>Preview landing</button>
       </div>
       <div className="code-box" style={{ fontSize: 26, padding: 13, marginBottom: 16 }}>{code}</div>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><FakeQR /></div>
-      <button className="btn btn-money btn-sm" style={{ width: '100%' }} onClick={() => { dispatch({ type: 'friendJoins', crewId: crew.id }); toast(dispatch, 'A friend joined through your link!', '🎉') }}>
-        ✨ Simulate a friend joining
-      </button>
+      {crewIsFull(crew) ? (
+        <div className="row-sub" style={{ textAlign: 'center' }}>Crew is full at {GAME.maxCrew}. That is the biggest ticket the game allows.</div>
+      ) : (
+        <button className="btn btn-money btn-sm" style={{ width: '100%' }} onClick={() => { dispatch({ type: 'friendJoins', crewId: crew.id }); toast(dispatch, 'A friend joined. The ticket just grew a number!', '🎉') }}>
+          Simulate a friend joining
+        </button>
+      )}
     </div>
   )
 }

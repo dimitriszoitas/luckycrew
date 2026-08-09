@@ -31,28 +31,30 @@ export default function ExerciseDetails() {
 
         <h3>The game</h3>
         <ul>
-          <li><b>Star 5</b>: pick 5 of 40 numbers plus a Star Ball (1–10); seven prize tiers up to the jackpot.</li>
+          <li><b>Star 5</b>: the draw is 5 numbers of 40 plus a Star Ball (1–10); seven prize tiers up to the jackpot.</li>
+          <li><b>The crew ticket grows</b>: every member adds a main number, so six players cover 11 numbers, and four or more unlock 3 Star Balls.</li>
           <li><b>Weekly Mega</b>: the headline draw. One big pot that grows with every crew that joins.</li>
           <li><b>Quick Draws</b>: smaller lotteries every 30 minutes; the next three (1.5 hours) are always on the home page.</li>
-          <li><b>Live pots</b>: every pot is visible at all times and rises in real time as crews join.</li>
+          <li><b>Multipliers</b>: every draw carries one (20x to 50x on Quick Draws, 100x to 500x on the Mega) for boosts.</li>
         </ul>
 
         <h3>Crews</h3>
         <ul>
-          <li>Create a crew: name, mascot, vibe, privacy</li>
+          <li>Create a crew: name, mascot, vibe, privacy. Maximum six players.</li>
           <li>Invite your people: share link, 6-letter code, QR</li>
-          <li>Discover &amp; join public crews</li>
+          <li>Discover &amp; join public crews, with full crews marked as such</li>
           <li>Crew records: luck %, total earnings, draws won</li>
-          <li>Captain role: opens entries, converts the pot to tickets, locks the draw</li>
+          <li>Captain role: adds tickets and locks the entry for the draw</li>
         </ul>
 
         <h3>Playing together</h3>
         <ul>
-          <li>Three-step join flow: tickets → crew → stake</li>
-          <li>Stake-based ownership: what you put in defines your cut of every win (no share units)</li>
-          <li>Pot → tickets: quick picks or the captain's hand-picked numbers</li>
-          <li>Automatic winnings split, credited straight to member wallets</li>
-          <li>Append-only ledger on every entry, the trust anchor</li>
+          <li>Three-step join flow: tickets → crew → your share. Price appears only after the crew is picked, because the crew sets it.</li>
+          <li>Equal shares: the ticket costs €4 plus €2 per extra member, split evenly, and everyone must pay before the entry can lock</li>
+          <li>Boosts: money above your share pays back at the draw's multiplier, to you alone, on a top-tier win</li>
+          <li>Readiness state on every entry ("4 of 6 paid"); at lock, unpaid members drop and the ticket shrinks to fit</li>
+          <li>Quick picks or the captain's hand-picked numbers, sized to the crew</li>
+          <li>Automatic equal split, credited straight to member wallets, on an append-only ledger</li>
           <li>Live draw theatre: skippable, screen-reader announced, with a full results &amp; split breakdown</li>
         </ul>
 
@@ -75,29 +77,39 @@ export default function ExerciseDetails() {
           same draw with several crews, and join a draw multiple times; the hero always shows where you're already in.
         </p>
 
-        <h3>Money &amp; ownership</h3>
+        <h3>The crew ticket</h3>
         <p>
-          There are no abstract “shares”. When you join, you choose how many tickets to add and a stake. The minimum
-          simply covers your tickets (tickets × €0.50), and anything above it raises your cut. Your cut of every win is
-          <b> your stake ÷ the crew's pot</b>, shown live as crewmates chip in, and locked the moment entries lock. The
-          join flow deliberately labels it “your cut right now”: it never promises a number that other members'
-          contributions could change.
+          Crew size is the core mechanic. The draw itself never changes: <b>5 numbers and 1 star</b> come out, and a
+          ticket wins on how many of those land inside it, not on matching every number it holds. Every member adds one
+          main number, so a solo player covers 6 numbers and a full crew of six covers <b>11 numbers plus 3 Star
+          Balls</b>, giving the draw far more room to fall inside the ticket. The ticket costs €4 for one player and €2 more
+          per extra member, capping at €14, and that price splits evenly. The result is the whole pitch in one line:
+          <b> the bigger your crew, the more numbers you cover and the less each of you pays</b> (€4,00 alone, €2,34
+          each at six).
+        </p>
+
+        <h3>Money: equal shares, personal boosts</h3>
+        <p>
+          There is no proportional ownership. Everyone pays the same mandatory share, so everyone takes the same cut of
+          any win. On top of that sits the <b>boost</b>: money above your share is a personal side bet that pays back at
+          the draw's multiplier (20x to 50x on Quick Draws, 100x to 500x on the Mega) if the crew lands 5 numbers or the
+          jackpot. A €10 boost at 500x returns €5.000, to that member alone.
         </p>
 
         <h3>Entry lifecycle</h3>
         <p>
-          <b>Open</b>: any member adds money, any amount, any time; the pot and each member's percentage update live.
-          <b> Tickets</b>: the captain converts unspent pot into tickets: instant quick picks or a manual number picker.
-          <b> Lock</b>: ownership snapshot; no more changes. <b>Draw</b>: the live reveal (skippable, never on a
-          timer you can't control). <b>Settlement</b>: winnings split proportionally to the cent, the rounding
-          remainder carries into the crew's next pot, and every member's cut lands in their wallet instantly.
+          <b>Open</b>: members pay their share; the entry shows who has and who has not. Adding tickets raises everyone's
+          share equally, and the ledger says so. <b>Ready</b>: all members paid, the captain can lock. <b>Lock</b>:
+          anyone who never paid is dropped and the ticket shrinks to the crew that did, with the surplus carried to the
+          next pot. <b>Draw</b>: the live reveal (skippable, never on a timer you can't control). <b>Settlement</b>:
+          winnings split equally to the cent, boosts paid on top where the tier allows, straight into member wallets.
         </p>
 
         <h3>Trust &amp; transparency</h3>
         <p>
-          Every cent is on an append-only ledger: contributions, ticket purchases, locks, settlements. The Stakes tab
-          shows exactly who holds what percentage of the pot; the results screen shows the full split table. No
-          treasurer, no spreadsheets, no arguments.
+          Every cent is on an append-only ledger: shares, boosts, tickets, locks, settlements. The Players tab shows
+          exactly who has paid and who still owes; the results screen shows the full split table with equal cuts and
+          boost payouts side by side. No treasurer, no spreadsheets, no arguments.
         </p>
 
         <h3>The live layer</h3>

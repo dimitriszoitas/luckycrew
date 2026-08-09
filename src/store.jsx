@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
-import { GAME, quickPick, settleDraw } from './game.js'
+import { GAME, quickPick, growTicket, settleDraw, shareFor, ticketPrice, rollMultiplier, mainCount, starCount, fmtEUR2 } from './game.js'
 
 // ── People ───────────────────────────────────────────────────────────────────
 
@@ -192,148 +192,133 @@ function seedCrews() {
   ]
 }
 
+// Shares are the mandatory equal minimum; boosts are the optional side bet.
+const entryOf = ({ id, crewId, drawNo, size, tickets, status = 'open', contributions = {}, boosts = {}, multiplier, ledger }) => ({
+  id, crewId, drawNo, status,
+  crewSize: size,
+  multiplier,
+  contributions,
+  boosts,
+  tickets: Array.from({ length: tickets }, () => ({ id: uid('t'), ...quickPick(size), source: 'Quick pick' })),
+  ledger,
+  result: null,
+  settlement: null,
+})
+
 function seedLotteries(crews) {
   const office = crews[0]
 
-  // Ongoing: Office Legends in draw 214
-  const lOffice = {
-    id: 'l-office-214',
-    crewId: 'c-office',
-    drawNo: 214,
-    status: 'open',
-    contributions: { you: 10, b1: 10, b2: 7.5, b3: 7.5, b4: 5 },
-    tickets: Array.from({ length: 6 }, () => ({ id: uid('t'), ...quickPick(), source: 'Quick pick' })),
+  // Ongoing: Office Legends in draw 214 · 5 members, 2 tickets, €4.80 each
+  const lOffice = entryOf({
+    id: 'l-office-214', crewId: 'c-office', drawNo: 214, size: 5, tickets: 2, multiplier: 300,
+    contributions: { you: 4.8, b1: 4.8, b2: 4.8 },
+    boosts: { b1: 5 },
     ledger: [
-      { id: uid('l'), t: ago(3200), icon: '🎟️', text: 'Office Legends entered draw #214' },
-      { id: uid('l'), t: ago(3100), icon: '💰', text: 'Maria K. chipped in €10.00' },
-      { id: uid('l'), t: ago(2900), icon: '💰', text: 'Nikos P. chipped in €7.50' },
-      { id: uid('l'), t: ago(2800), icon: '💰', text: 'Jim chipped in €10.00' },
-      { id: uid('l'), t: ago(1380), icon: '💰', text: 'Elena V. chipped in €7.50' },
-      { id: uid('l'), t: ago(600), icon: '🎫', text: 'Crew bought 6 tickets from the pot (€3.00)' },
-      { id: uid('l'), t: ago(290), icon: '💰', text: 'Kostas D. chipped in €5.00' },
+      { id: uid('l'), t: ago(3200), icon: '🎟️', text: 'Office Legends entered draw #214 with 2 tickets' },
+      { id: uid('l'), t: ago(3100), icon: '💶', text: 'Maria K. paid their share (€4,80)' },
+      { id: uid('l'), t: ago(2900), icon: '💶', text: 'Nikos P. paid their share (€4,80)' },
+      { id: uid('l'), t: ago(2800), icon: '💶', text: 'Jim paid their share (€4,80)' },
+      { id: uid('l'), t: ago(1380), icon: '🚀', text: 'Maria K. boosted €5,00 at 300x' },
     ],
-    result: null,
-    settlement: null,
-  }
+  })
 
-  // Ongoing: Friday Fam in draw 214
-  const lFam = {
-    id: 'l-fam-214',
-    crewId: 'c-fam',
-    drawNo: 214,
-    status: 'open',
-    contributions: { b4: 4, you: 2, b5: 4 },
-    tickets: [
-      { id: uid('t'), ...quickPick(), source: 'Quick pick' },
-      { id: uid('t'), ...quickPick(), source: 'Quick pick' },
-    ],
+  // Ongoing: Friday Fam in draw 214 · 3 members, 1 ticket, €2.67 each
+  const lFam = entryOf({
+    id: 'l-fam-214', crewId: 'c-fam', drawNo: 214, size: 3, tickets: 1, multiplier: 200,
+    contributions: { b4: 2.67, you: 2.67 },
     ledger: [
-      { id: uid('l'), t: ago(9000), icon: '🎟️', text: 'Friday Fam entered draw #214' },
-      { id: uid('l'), t: ago(8800), icon: '💰', text: 'Jim chipped in €2.00' },
-      { id: uid('l'), t: ago(7000), icon: '🎫', text: 'Crew bought 2 tickets from the pot (€1.00)' },
+      { id: uid('l'), t: ago(9000), icon: '🎟️', text: 'Friday Fam entered draw #214 with 1 ticket' },
+      { id: uid('l'), t: ago(8900), icon: '💶', text: 'Kostas D. paid their share (€2,67)' },
+      { id: uid('l'), t: ago(8800), icon: '💶', text: 'Jim paid their share (€2,67)' },
     ],
-    result: null,
-    settlement: null,
-  }
+  })
 
-  // Ongoing: Gym Rats in draw 214
-  const lGym = {
-    id: 'l-gym-214',
-    crewId: 'c-gym',
-    drawNo: 214,
-    status: 'open',
-    contributions: { b6: 5, you: 2.5, b3: 4 },
-    tickets: Array.from({ length: 3 }, () => ({ id: uid('t'), ...quickPick(), source: 'Quick pick' })),
+  // Ongoing: Gym Rats in draw 214 · 3 members, 2 tickets, fully paid up
+  const lGym = entryOf({
+    id: 'l-gym-214', crewId: 'c-gym', drawNo: 214, size: 3, tickets: 2, multiplier: 500,
+    contributions: { b6: 5.34, you: 5.34, b3: 5.34 },
+    boosts: { you: 5, b3: 2.5 },
     ledger: [
-      { id: uid('l'), t: ago(6000), icon: '🎟️', text: 'Gym Rats entered draw #214' },
-      { id: uid('l'), t: ago(5800), icon: '💰', text: 'Alex T. chipped in €5.00' },
-      { id: uid('l'), t: ago(5600), icon: '💰', text: 'Jim chipped in €2.50' },
-      { id: uid('l'), t: ago(5000), icon: '💰', text: 'Elena V. chipped in €4.00' },
-      { id: uid('l'), t: ago(4800), icon: '🎫', text: 'Crew bought 3 tickets from the pot (€1.50)' },
+      { id: uid('l'), t: ago(6000), icon: '🎟️', text: 'Gym Rats entered draw #214 with 2 tickets' },
+      { id: uid('l'), t: ago(5800), icon: '💶', text: 'Alex T. paid their share (€5,34)' },
+      { id: uid('l'), t: ago(5600), icon: '💶', text: 'Jim paid their share (€5,34)' },
+      { id: uid('l'), t: ago(5000), icon: '💶', text: 'Elena V. paid their share (€5,34)' },
+      { id: uid('l'), t: ago(4900), icon: '🚀', text: 'Jim boosted €5,00 at 500x' },
+      { id: uid('l'), t: ago(4800), icon: '✅', text: 'All 3 members paid. Ready to lock' },
     ],
-    result: null,
-    settlement: null,
-  }
+  })
 
-  // Ongoing: Uni Alumni in draw 214
-  const lUni = {
-    id: 'l-uni-214',
-    crewId: 'c-uni',
-    drawNo: 214,
-    status: 'open',
-    contributions: { b2: 6, you: 3, b7: 4 },
-    tickets: Array.from({ length: 5 }, () => ({ id: uid('t'), ...quickPick(), source: 'Quick pick' })),
+  // Ongoing: Uni Alumni in draw 214 · 3 members, 1 ticket, fully paid up
+  const lUni = entryOf({
+    id: 'l-uni-214', crewId: 'c-uni', drawNo: 214, size: 3, tickets: 1, multiplier: 100,
+    contributions: { b2: 2.67, you: 2.67, b7: 2.67 },
+    boosts: { b2: 10 },
     ledger: [
-      { id: uid('l'), t: ago(7500), icon: '🎟️', text: 'Uni Alumni entered draw #214' },
-      { id: uid('l'), t: ago(7300), icon: '💰', text: 'Nikos P. chipped in €6.00' },
-      { id: uid('l'), t: ago(7100), icon: '💰', text: 'Jim chipped in €3.00' },
-      { id: uid('l'), t: ago(6900), icon: '💰', text: 'Dora M. chipped in €4.00' },
-      { id: uid('l'), t: ago(6600), icon: '🎫', text: 'Crew bought 5 tickets from the pot (€2.50)' },
+      { id: uid('l'), t: ago(7500), icon: '🎟️', text: 'Uni Alumni entered draw #214 with 1 ticket' },
+      { id: uid('l'), t: ago(7300), icon: '💶', text: 'Nikos P. paid their share (€2,67)' },
+      { id: uid('l'), t: ago(7100), icon: '💶', text: 'Jim paid their share (€2,67)' },
+      { id: uid('l'), t: ago(6900), icon: '💶', text: 'Dora M. paid their share (€2,67)' },
+      { id: uid('l'), t: ago(6800), icon: '🚀', text: 'Nikos P. boosted €10,00 at 100x' },
     ],
-    result: null,
-    settlement: null,
-  }
+  })
 
-  // Ongoing: Block 12 Neighbours in draw 214
-  const lBlock = {
-    id: 'l-block-214',
-    crewId: 'c-block',
-    drawNo: 214,
-    status: 'open',
-    contributions: { you: 5, b8: 2.5 },
-    tickets: Array.from({ length: 4 }, () => ({ id: uid('t'), ...quickPick(), source: 'Quick pick' })),
+  // Ongoing: Block 12 Neighbours in draw 214 · 2 members, 2 tickets, one unpaid
+  const lBlock = entryOf({
+    id: 'l-block-214', crewId: 'c-block', drawNo: 214, size: 2, tickets: 2, multiplier: 400,
+    contributions: { you: 6 },
     ledger: [
-      { id: uid('l'), t: ago(4200), icon: '🎟️', text: 'Block 12 Neighbours entered draw #214' },
-      { id: uid('l'), t: ago(4000), icon: '💰', text: 'Jim chipped in €5.00' },
-      { id: uid('l'), t: ago(3800), icon: '💰', text: 'Petros G. chipped in €2.50' },
-      { id: uid('l'), t: ago(3500), icon: '🎫', text: 'Crew bought 4 tickets from the pot (€2.00)' },
+      { id: uid('l'), t: ago(4200), icon: '🎟️', text: 'Block 12 Neighbours entered draw #214 with 2 tickets' },
+      { id: uid('l'), t: ago(4000), icon: '💶', text: 'Jim paid their share (€6,00)' },
     ],
-    result: null,
-    settlement: null,
-  }
+  })
 
-  // Completed: Office Legends won €150 in draw 213
+  // Completed: Office Legends won €150 in draw 213 (5 members: 10 numbers + 3 stars)
   const result213 = { nums: [3, 9, 14, 22, 31], star: 6 }
   const tickets213 = [
-    { id: uid('t'), nums: [3, 9, 14, 22, 40], star: 2, source: 'Quick pick' }, // 4 matches = €150
-    { id: uid('t'), nums: [1, 5, 18, 25, 33], star: 6, source: 'Quick pick' },
-    { id: uid('t'), nums: [2, 9, 20, 31, 38], star: 4, source: 'Quick pick' },
-    { id: uid('t'), nums: [7, 11, 16, 30, 40], star: 9, source: 'Quick pick' },
+    // 4 of the 5 drawn numbers, no star: €150
+    { id: uid('t'), nums: [3, 5, 9, 14, 17, 22, 26, 33, 38, 40], stars: [2, 7, 9], source: 'Quick pick' },
+    { id: uid('t'), nums: [1, 4, 8, 12, 18, 25, 27, 30, 33, 36], stars: [3, 5, 8], source: "Captain's pick" },
   ]
   const lOffice213 = {
     id: 'l-office-213',
     crewId: 'c-office',
     drawNo: 213,
     status: 'settled',
-    contributions: { you: 10, b1: 10, b2: 10, b3: 10 },
+    crewSize: 5,
+    multiplier: 200,
+    contributions: { you: 4.8, b1: 4.8, b2: 4.8, b3: 4.8 },
+    boosts: { b1: 5 },
     tickets: tickets213,
     ledger: [
-      { id: uid('l'), t: ago(11000), icon: '🎟️', text: 'Office Legends entered draw #213' },
-      { id: uid('l'), t: ago(10200), icon: '🎫', text: 'Crew bought 4 tickets from the pot (€2.00)' },
-      { id: uid('l'), t: ago(10000), icon: '🏆', text: 'Draw #213 settled. Crew won €150.00' },
-      { id: uid('l'), t: ago(10000), icon: '⚡', text: 'Winnings split automatically across 4 members' },
+      { id: uid('l'), t: ago(11000), icon: '🎟️', text: 'Office Legends entered draw #213 with 2 tickets' },
+      { id: uid('l'), t: ago(10600), icon: '✅', text: '4 members paid their share (€4,80 each)' },
+      { id: uid('l'), t: ago(10200), icon: '🔒', text: 'Entries locked. Elena V. dropped, ticket resized to 4 players' },
+      { id: uid('l'), t: ago(10000), icon: '🏆', text: 'Draw #213 settled. Crew won €150,00' },
+      { id: uid('l'), t: ago(10000), icon: '⚡', text: 'Winnings split equally across 4 members' },
     ],
     result: result213,
     settlement: null, // filled below
   }
   lOffice213.settlement = settleDraw(lOffice213, office, result213)
 
-  // Completed: Friday Fam won nothing in draw 212
+  // Completed: Friday Fam won nothing in draw 212 (3 members: 8 numbers + 1 star)
   const result212 = { nums: [6, 12, 19, 27, 35], star: 3 }
   const lFam212 = {
     id: 'l-fam-212',
     crewId: 'c-fam',
     drawNo: 212,
     status: 'settled',
-    contributions: { b4: 4, you: 4, b5: 4 },
+    crewSize: 3,
+    multiplier: 100,
+    contributions: { b4: 2.67, you: 2.67, b5: 2.67 },
+    boosts: {},
     tickets: [
-      { id: uid('t'), nums: [1, 6, 21, 30, 39], star: 8, source: 'Quick pick' },
-      { id: uid('t'), nums: [4, 13, 19, 28, 37], star: 1, source: 'Quick pick' },
-      { id: uid('t'), nums: [2, 10, 24, 33, 40], star: 5, source: 'Quick pick' },
+      { id: uid('t'), nums: [1, 6, 15, 21, 24, 30, 34, 39], stars: [8], source: 'Quick pick' },
+      { id: uid('t'), nums: [4, 9, 13, 19, 22, 28, 31, 37], stars: [1], source: 'Quick pick' },
     ],
     ledger: [
-      { id: uid('l'), t: ago(20000), icon: '🎟️', text: 'Friday Fam entered draw #212' },
-      { id: uid('l'), t: ago(19000), icon: '🎫', text: 'Crew bought 3 tickets from the pot (€1.50)' },
+      { id: uid('l'), t: ago(20000), icon: '🎟️', text: 'Friday Fam entered draw #212 with 2 tickets' },
+      { id: uid('l'), t: ago(19000), icon: '✅', text: 'All 3 members paid their share (€2,67 each)' },
       { id: uid('l'), t: ago(18500), icon: '💜', text: 'Draw #212 settled. No winning tickets this time' },
     ],
     result: result212,
@@ -350,14 +335,16 @@ const initialState = {
   theme: 'dark',
   route: { name: 'home' },
   wallet: {
-    balance: 65.5,
+    balance: 1500,
     txns: [
-      { id: uid('x'), t: ago(100000), label: 'Top-up', amount: 50 },
-      { id: uid('x'), t: ago(19500), label: 'Friday Fam · draw #212 · stake', amount: -4 },
-      { id: uid('x'), t: ago(11000), label: 'Office Legends · draw #213 · stake', amount: -10 },
+      { id: uid('x'), t: ago(100000), label: 'Top-up', amount: 1500 },
+      { id: uid('x'), t: ago(19500), label: 'Friday Fam · draw #212 · share', amount: -2.67 },
+      { id: uid('x'), t: ago(11000), label: 'Office Legends · draw #213 · share', amount: -4.8 },
       { id: uid('x'), t: ago(10000), label: 'Office Legends · draw #213 winnings 🏆', amount: 37.5 },
-      { id: uid('x'), t: ago(8800), label: 'Friday Fam · draw #214 · stake', amount: -2 },
-      { id: uid('x'), t: ago(2800), label: 'Office Legends · draw #214 · stake', amount: -10 },
+      { id: uid('x'), t: ago(8800), label: 'Friday Fam · draw #214 · share', amount: -2.67 },
+      { id: uid('x'), t: ago(5600), label: 'Gym Rats · draw #214 · share', amount: -5.34 },
+      { id: uid('x'), t: ago(4900), label: 'Gym Rats · draw #214 · boost 500x', amount: -5 },
+      { id: uid('x'), t: ago(2800), label: 'Office Legends · draw #214 · share', amount: -4.8 },
       { id: uid('x'), t: ago(1000), label: 'Top-up', amount: 4 },
     ],
   },
@@ -365,11 +352,12 @@ const initialState = {
   lotteries: seedLotteries(seededCrews),
   drawCloses: now + 1000 * 60 * 47 + 1000 * 12,
   // Live events: pots grow as crews join (simulated by the potTick action)
-  mega: { pot: 1250000, crews: 1872 },
+  // The Mega rolls over: it starts at the game's floor and climbs until it's hit
+  mega: { pot: GAME.jackpot, crews: 1872, multiplier: 300, rollovers: 3 },
   quickDraws: [
-    { id: 'q0', closesAt: firstSlot, pot: 342.5, crews: 47, joined: 0 },
-    { id: 'q1', closesAt: firstSlot + HALF_HOUR, pot: 180, crews: 23, joined: 0 },
-    { id: 'q2', closesAt: firstSlot + 2 * HALF_HOUR, pot: 95, crews: 11, joined: 0 },
+    { id: 'q0', drawNo: 1041, closesAt: firstSlot, pot: 342.5, crews: 47, joined: 0, multiplier: 50 },
+    { id: 'q1', drawNo: 1042, closesAt: firstSlot + HALF_HOUR, pot: 180, crews: 23, joined: 0, multiplier: 30 },
+    { id: 'q2', drawNo: 1043, closesAt: firstSlot + 2 * HALF_HOUR, pot: 95, crews: 11, joined: 0, multiplier: 20 },
   ],
   toast: null,
   joinLottery: null,
@@ -379,11 +367,31 @@ const initialState = {
 
 export const crewById = (state, id) => state.crews.find(c => c.id === id)
 export const lotteryById = (state, id) => state.lotteries.find(l => l.id === id)
-export const potTotal = l => Object.values(l.contributions).reduce((s, n) => s + n, 0)
-export const potBalance = l => {
-  const spent = l.tickets.length * GAME.ticketPrice
-  return Math.max(0, Math.round((potTotal(l) - spent) * 100) / 100)
+const sum = o => Object.values(o || {}).reduce((s, n) => s + n, 0)
+export const sharesTotal = l => Math.round(sum(l.contributions) * 100) / 100
+export const boostsTotal = l => Math.round(sum(l.boosts) * 100) / 100
+export const potTotal = l => Math.round((sum(l.contributions) + sum(l.boosts)) * 100) / 100
+
+// The crew size an entry is priced at: live headcount while open, frozen at lock
+export const entrySize = (state, l) => {
+  if (l.crewSize && l.status !== 'open') return l.crewSize
+  const crew = crewById(state, l.crewId)
+  return Math.min(GAME.maxCrew, crew?.members.length || l.crewSize || 1)
 }
+// What every member owes for this entry: ticket price x tickets, split equally
+export const shareDue = (state, l) => shareFor(entrySize(state, l), Math.max(1, l.tickets.length))
+export const ticketCost = (state, l) => Math.round(ticketPrice(entrySize(state, l)) * l.tickets.length * 100) / 100
+export const hasPaid = (state, l, memberId) => (l.contributions[memberId] || 0) + 0.001 >= shareDue(state, l)
+export const paidMembers = (state, l) => {
+  const crew = crewById(state, l.crewId)
+  return (crew?.members || []).filter(m => hasPaid(state, l, m.id))
+}
+export const unpaidMembers = (state, l) => {
+  const crew = crewById(state, l.crewId)
+  return (crew?.members || []).filter(m => !hasPaid(state, l, m.id))
+}
+export const isReady = (state, l) => unpaidMembers(state, l).length === 0
+export const crewIsFull = crew => crew.members.length >= GAME.maxCrew
 export const ongoingForCrew = (state, crewId) =>
   state.lotteries.find(l => l.crewId === crewId && l.status !== 'settled')
 export const nextDrawFor = (state, crewId) => {
@@ -422,6 +430,24 @@ function updateCrew(state, crewId, fn) {
   return { ...state, crews: state.crews.map(c => (c.id === crewId ? fn(c) : c)) }
 }
 
+// A new member means a new number on every ticket of every open entry
+function growOpenEntries(state, crewId, memberName) {
+  const crew = crewById(state, crewId)
+  const size = Math.min(GAME.maxCrew, crew.members.length)
+  return {
+    ...state,
+    lotteries: state.lotteries.map(l => {
+      if (l.crewId !== crewId || l.status !== 'open' || !l.tickets.length) return l
+      const grown = { ...l, crewSize: size, tickets: l.tickets.map(t => growTicket(t, size)) }
+      return withLedger(
+        grown,
+        '➕',
+        `${memberName} joined. Tickets grew to ${mainCount(size)} numbers + ${starCount(size)} star${starCount(size) > 1 ? 's' : ''}, share is now ${fmtEUR2(shareFor(size, l.tickets.length))}`
+      )
+    }),
+  }
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case 'nav':
@@ -447,126 +473,195 @@ function reducer(state, action) {
     }
 
     case 'joinCrew': {
+      const target = crewById(state, action.crewId)
+      if (!target || (crewIsFull(target) && !target.members.some(m => m.id === 'you'))) return state
       let s = updateCrew(state, action.crewId, c => {
         if (c.members.some(m => m.id === 'you')) return c
         return { ...c, members: [...c.members, { ...YOU, joinedAt: Date.now() }] }
       })
+      s = growOpenEntries(s, action.crewId, YOU.name)
       return { ...s, route: { name: 'crew', crewId: action.crewId } }
     }
 
     case 'friendJoins': {
       const crew = crewById(state, action.crewId)
+      if (crewIsFull(crew)) return state
       const existing = new Set(crew.members.map(m => m.id))
       const candidate = BOTS.find(b => !existing.has(b.id))
       if (!candidate) return state
-      return updateCrew(state, action.crewId, c => ({ ...c, members: [...c.members, { ...candidate, joinedAt: Date.now() }] }))
+      const s = updateCrew(state, action.crewId, c => ({ ...c, members: [...c.members, { ...candidate, joinedAt: Date.now() }] }))
+      return growOpenEntries(s, action.crewId, candidate.name)
     }
 
     case 'enterLottery': {
       const crew = crewById(state, action.crewId)
+      const size = Math.min(GAME.maxCrew, crew.members.length)
       const lottery = {
         id: uid('lot'),
         crewId: action.crewId,
         drawNo: action.drawNo,
         status: 'open',
+        crewSize: size,
+        multiplier: rollMultiplier('mega'),
         contributions: {},
-        tickets: [],
-        ledger: [{ id: uid('l'), t: Date.now(), icon: '🎟️', text: `${crew.name} entered draw #${action.drawNo}` }],
+        boosts: {},
+        tickets: [{ id: uid('t'), ...quickPick(size), source: 'Quick pick' }],
+        ledger: [{ id: uid('l'), t: Date.now(), icon: '🎟️', text: `${crew.name} entered draw #${action.drawNo} with 1 ticket` }],
         result: null,
         settlement: null,
       }
       return { ...state, lotteries: [lottery, ...state.lotteries], joinLottery: null, route: { name: 'lottery', lotteryId: lottery.id } }
     }
 
-    case 'contribute': {
-      const { lotteryId, amount } = action
-      const lottery = lotteryById(state, lotteryId)
+    // Pay your mandatory share, whatever is still outstanding
+    case 'payShare': {
+      const lottery = lotteryById(state, action.lotteryId)
       const crew = crewById(state, lottery.crewId)
-      if (amount > state.wallet.balance) return state
-      let s = updateLottery(state, lotteryId, l =>
+      const due = Math.round((shareDue(state, lottery) - (lottery.contributions.you || 0)) * 100) / 100
+      if (due <= 0 || due > state.wallet.balance) return state
+      const s = updateLottery(state, action.lotteryId, l =>
         withLedger(
-          { ...l, contributions: { ...l.contributions, you: Math.round(((l.contributions.you || 0) + amount) * 100) / 100 } },
-          '💰',
-          `${YOU.name} chipped in €${amount.toFixed(2)}`
+          { ...l, contributions: { ...l.contributions, you: shareDue(state, l) } },
+          '💶',
+          `${YOU.name} paid their share (${fmtEUR2(due)})`
         )
       )
       return {
         ...s,
         wallet: {
-          balance: Math.round((state.wallet.balance - amount) * 100) / 100,
-          txns: [{ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${lottery.drawNo} · stake`, amount: -amount }, ...state.wallet.txns],
+          balance: Math.round((state.wallet.balance - due) * 100) / 100,
+          txns: [{ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${lottery.drawNo} · share`, amount: -due }, ...state.wallet.txns],
         },
       }
     }
 
-    // The whole join flow in one action: tickets + stake into the crew's entry
-    case 'joinDraw': {
-      const { crewId, tickets: tCount, amount, drawNo } = action
-      if (amount > state.wallet.balance) return state
-      const crew = crewById(state, crewId)
-      let s = state
-      let entry = s.lotteries.find(l => l.crewId === crewId && l.status !== 'settled')
-      if (!entry) {
-        entry = {
-          id: uid('lot'), crewId, drawNo, status: 'open', contributions: {}, tickets: [],
-          ledger: [{ id: uid('l'), t: Date.now(), icon: '🎟️', text: `${crew.name} entered draw #${drawNo}` }],
-          result: null, settlement: null,
-        }
-        s = { ...s, lotteries: [entry, ...s.lotteries] }
-      }
-      const newTickets = Array.from({ length: tCount }, () => ({ id: uid('t'), ...quickPick(), source: 'Quick pick' }))
-      s = updateLottery(s, entry.id, l =>
+    // The optional side bet: pays out at the entry multiplier on a top-tier win
+    case 'boostEntry': {
+      const { lotteryId, amount } = action
+      const lottery = lotteryById(state, lotteryId)
+      const crew = crewById(state, lottery.crewId)
+      if (amount <= 0 || amount > state.wallet.balance) return state
+      const s = updateLottery(state, lotteryId, l =>
         withLedger(
-          withLedger(
-            { ...l, contributions: { ...l.contributions, you: Math.round(((l.contributions.you || 0) + amount) * 100) / 100 }, tickets: [...l.tickets, ...newTickets] },
-            '💰',
-            `${YOU.name} chipped in €${amount.toFixed(2)}`
-          ),
-          '🎫',
-          `${tCount} ticket${tCount > 1 ? 's' : ''} added to the crew pot`
+          { ...l, boosts: { ...l.boosts, you: Math.round(((l.boosts?.you || 0) + amount) * 100) / 100 } },
+          '🚀',
+          `${YOU.name} boosted ${fmtEUR2(amount)} at ${lottery.multiplier}x`
         )
       )
       return {
         ...s,
         wallet: {
           balance: Math.round((state.wallet.balance - amount) * 100) / 100,
-          txns: [{ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${entry.drawNo} · stake`, amount: -amount }, ...state.wallet.txns],
+          txns: [{ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${lottery.drawNo} · boost ${lottery.multiplier}x`, amount: -amount }, ...state.wallet.txns],
+        },
+      }
+    }
+
+    // The whole join flow in one action: tickets, your share, optional boost
+    case 'joinDraw': {
+      const { crewId, tickets: tCount, boost = 0, drawNo, kind = 'mega' } = action
+      const crew = crewById(state, crewId)
+      const size = Math.min(GAME.maxCrew, crew.members.length)
+      let s = state
+      let entry = s.lotteries.find(l => l.crewId === crewId && l.status !== 'settled')
+      const fresh = !entry
+      if (fresh) {
+        entry = {
+          id: uid('lot'), crewId, drawNo, status: 'open', crewSize: size,
+          multiplier: rollMultiplier(kind), contributions: {}, boosts: {}, tickets: [],
+          ledger: [{ id: uid('l'), t: Date.now(), icon: '🎟️', text: `${crew.name} entered draw #${drawNo} with ${tCount} ticket${tCount > 1 ? 's' : ''}` }],
+          result: null, settlement: null,
+        }
+        s = { ...s, lotteries: [entry, ...s.lotteries] }
+      }
+      const newTickets = Array.from({ length: tCount }, () => ({ id: uid('t'), ...quickPick(size), source: 'Quick pick' }))
+      s = updateLottery(s, entry.id, l => {
+        const withTickets = { ...l, tickets: [...l.tickets, ...newTickets] }
+        return fresh ? withTickets : withLedger(withTickets, '🎫', `${YOU.name} added ${tCount} ticket${tCount > 1 ? 's' : ''}. Everyone's share is now ${fmtEUR2(shareFor(size, withTickets.tickets.length))}`)
+      })
+      const updated = lotteryById(s, entry.id)
+      const due = Math.round((shareFor(size, updated.tickets.length) - (updated.contributions.you || 0)) * 100) / 100
+      const total = Math.round((Math.max(0, due) + boost) * 100) / 100
+      if (total > state.wallet.balance) return state
+      s = updateLottery(s, entry.id, l => {
+        let next = { ...l, contributions: { ...l.contributions, you: shareFor(size, l.tickets.length) } }
+        next = withLedger(next, '💶', `${YOU.name} paid their share (${fmtEUR2(Math.max(0, due))})`)
+        if (boost > 0) {
+          next = { ...next, boosts: { ...next.boosts, you: Math.round(((next.boosts?.you || 0) + boost) * 100) / 100 } }
+          next = withLedger(next, '🚀', `${YOU.name} boosted ${fmtEUR2(boost)} at ${l.multiplier}x`)
+        }
+        return next
+      })
+      const txns = [{ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${entry.drawNo} · share`, amount: -Math.max(0, due) }]
+      if (boost > 0) txns.unshift({ id: uid('x'), t: Date.now(), label: `${crew.name} · draw #${entry.drawNo} · boost ${entry.multiplier}x`, amount: -boost })
+      return {
+        ...s,
+        wallet: {
+          balance: Math.round((state.wallet.balance - total) * 100) / 100,
+          txns: [...txns, ...state.wallet.txns],
         },
         joinLottery: null,
         route: { name: 'lottery', lotteryId: entry.id },
       }
     }
 
-    case 'botsChipIn': {
+    // Demo helper: the crewmates who still owe their share settle up
+    case 'botsPayUp': {
       const lottery = lotteryById(state, action.lotteryId)
-      const crew = crewById(state, lottery.crewId)
-      const candidates = crew.members.filter(m => m.id !== 'you')
-      if (!candidates.length) return state
+      const owing = unpaidMembers(state, lottery).filter(m => m.id !== 'you')
+      if (!owing.length) return state
+      const due = shareDue(state, lottery)
       let s = state
-      const picks = candidates.sort(() => Math.random() - 0.5).slice(0, Math.min(2, candidates.length))
-      for (const m of picks) {
-        const amt = 2.5 * (1 + Math.floor(Math.random() * 4))
+      for (const m of owing.slice(0, 2)) {
         s = updateLottery(s, action.lotteryId, l =>
-          withLedger(
-            { ...l, contributions: { ...l.contributions, [m.id]: Math.round(((l.contributions[m.id] || 0) + amt) * 100) / 100 } },
-            '💰',
-            `${m.name} chipped in €${amt.toFixed(2)}`
-          )
+          withLedger({ ...l, contributions: { ...l.contributions, [m.id]: due } }, '💶', `${m.name} paid their share (${fmtEUR2(due)})`)
         )
       }
       return s
     }
 
-    case 'buyTickets': {
+    case 'addTickets': {
       const { lotteryId, tickets } = action
-      const cost = tickets.length * GAME.ticketPrice
+      const lottery = lotteryById(state, lotteryId)
+      const size = entrySize(state, lottery)
+      const count = lottery.tickets.length + tickets.length
       return updateLottery(state, lotteryId, l =>
-        withLedger({ ...l, tickets: [...l.tickets, ...tickets] }, '🎫', `Crew bought ${tickets.length} ticket${tickets.length > 1 ? 's' : ''} from the pot (€${cost.toFixed(2)})`)
+        withLedger(
+          { ...l, tickets: [...l.tickets, ...tickets] },
+          '🎫',
+          `${tickets.length} ticket${tickets.length > 1 ? 's' : ''} added. Everyone's share is now ${fmtEUR2(shareFor(size, count))}`
+        )
       )
     }
 
-    case 'lockLottery':
-      return updateLottery(state, action.lotteryId, l => withLedger({ ...l, status: 'locked' }, '🔒', 'Entries locked. Ownership snapshot taken'))
+    // Lock drops anyone who never paid and resizes the ticket to the crew that did
+    case 'lockLottery': {
+      const lottery = lotteryById(state, action.lotteryId)
+      const paid = paidMembers(state, lottery)
+      const dropped = unpaidMembers(state, lottery)
+      if (!paid.length) return state
+      const size = Math.max(1, paid.length)
+      const spec = { main: mainCount(size), stars: starCount(size) }
+      const paidIds = new Set(paid.map(m => m.id))
+      return updateLottery(state, action.lotteryId, l => {
+        const tickets = l.tickets.map(t => ({
+          ...t,
+          nums: t.nums.slice(0, spec.main),
+          stars: (t.stars || []).slice(0, spec.stars),
+        }))
+        const contributions = Object.fromEntries(Object.entries(l.contributions).filter(([id]) => paidIds.has(id)))
+        const boosts = Object.fromEntries(Object.entries(l.boosts || {}).filter(([id]) => paidIds.has(id)))
+        const surplus = Math.round((Object.values(contributions).reduce((s, n) => s + n, 0) - ticketPrice(size) * tickets.length) * 100) / 100
+        let next = { ...l, status: 'locked', crewSize: size, tickets, contributions, boosts }
+        if (dropped.length) {
+          next = withLedger(next, '🔒', `Entries locked. ${dropped.map(m => m.name).join(', ')} never paid and ${dropped.length > 1 ? 'were' : 'was'} dropped. Ticket resized to ${spec.main} numbers + ${spec.stars} star${spec.stars > 1 ? 's' : ''}`)
+          if (surplus > 0) next = withLedger(next, '↩️', `${fmtEUR2(surplus)} surplus carried to the crew's next pot`)
+        } else {
+          next = withLedger(next, '🔒', `Entries locked. All ${size} members paid, ${spec.main} numbers + ${spec.stars} star${spec.stars > 1 ? 's' : ''} in play`)
+        }
+        return next
+      })
+    }
 
     case 'setResult':
       return updateLottery(state, action.lotteryId, l => ({ ...l, status: 'drawing', result: action.result }))
@@ -576,13 +671,12 @@ function reducer(state, action) {
       const lottery = lotteryById(state, lotteryId)
       const crew = crewById(state, lottery.crewId)
       const yourCut = settlement.splits.find(x => x.memberId === 'you')?.amount || 0
-      let s = updateLottery(state, lotteryId, l =>
-        withLedger(
-          withLedger({ ...l, status: 'settled', settlement }, '🏆', `Draw #${l.drawNo} settled. Crew won €${settlement.totalWon.toFixed(2)}`),
-          '⚡',
-          `Winnings split automatically across ${settlement.splits.length} contributors`
-        )
-      )
+      let s = updateLottery(state, lotteryId, l => {
+        let next = withLedger({ ...l, status: 'settled', settlement }, '🏆', `Draw #${l.drawNo} settled. Crew won ${fmtEUR2(settlement.totalWon)}`)
+        next = withLedger(next, '⚡', `Winnings split equally across ${settlement.splits.length} member${settlement.splits.length > 1 ? 's' : ''}`)
+        if (settlement.boostTotal > 0) next = withLedger(next, '🚀', `Boosts paid out at ${settlement.multiplier}x: ${fmtEUR2(settlement.boostTotal)}`)
+        return next
+      })
       if (yourCut > 0) {
         s = {
           ...s,
@@ -606,7 +700,7 @@ function reducer(state, action) {
       const t = Date.now()
       const quickDraws = state.quickDraws.map(q => {
         if (q.closesAt <= t) {
-          return { ...q, closesAt: q.closesAt + 3 * HALF_HOUR, pot: 40 + Math.random() * 45, crews: 3 + Math.floor(Math.random() * 7), joined: 0 }
+          return { ...q, drawNo: q.drawNo + 3, closesAt: q.closesAt + 3 * HALF_HOUR, pot: 40 + Math.random() * 45, crews: 3 + Math.floor(Math.random() * 7), joined: 0, multiplier: rollMultiplier('quick') }
         }
         if (Math.random() < 0.6) {
           return { ...q, pot: Math.round((q.pot + 2.5 * (1 + Math.floor(Math.random() * 4))) * 100) / 100, crews: q.crews + (Math.random() < 0.5 ? 1 : 0) }
@@ -614,22 +708,34 @@ function reducer(state, action) {
         return q
       })
       const mega = Math.random() < 0.7
-        ? { pot: state.mega.pot + 12.5 * (1 + Math.floor(Math.random() * 4)), crews: state.mega.crews + (Math.random() < 0.4 ? 1 : 0) }
+        ? { ...state.mega, pot: state.mega.pot + 12.5 * (1 + Math.floor(Math.random() * 4)), crews: state.mega.crews + (Math.random() < 0.4 ? 1 : 0) }
         : state.mega
-      // crewmates drift into your open entries too: pots grow in real time
+      // crewmates settle up and boost in real time
       let lotteries = state.lotteries
       if (Math.random() < 0.4) {
         lotteries = state.lotteries.map(l => {
           if (l.status !== 'open' || Math.random() < 0.5) return l
           const crew = state.crews.find(c => c.id === l.crewId)
-          const mates = crew ? crew.members.filter(m => m.id !== 'you') : []
+          if (!crew) return l
+          const due = shareFor(Math.min(GAME.maxCrew, crew.members.length), Math.max(1, l.tickets.length))
+          const owing = crew.members.filter(m => m.id !== 'you' && (l.contributions[m.id] || 0) + 0.001 < due)
+          if (owing.length) {
+            const m = owing[Math.floor(Math.random() * owing.length)]
+            return {
+              ...l,
+              contributions: { ...l.contributions, [m.id]: due },
+              ledger: [...l.ledger, { id: uid('l'), t, icon: '💶', text: `${m.name} paid their share (${fmtEUR2(due)})` }],
+            }
+          }
+          // everyone is paid up: someone throws a boost on instead
+          const mates = crew.members.filter(m => m.id !== 'you')
           if (!mates.length) return l
           const m = mates[Math.floor(Math.random() * mates.length)]
           const amt = 2.5 * (1 + Math.floor(Math.random() * 3))
           return {
             ...l,
-            contributions: { ...l.contributions, [m.id]: Math.round(((l.contributions[m.id] || 0) + amt) * 100) / 100 },
-            ledger: [...l.ledger, { id: uid('l'), t, icon: '💰', text: `${m.name} chipped in €${amt.toFixed(2)}` }],
+            boosts: { ...l.boosts, [m.id]: Math.round(((l.boosts?.[m.id] || 0) + amt) * 100) / 100 },
+            ledger: [...l.ledger, { id: uid('l'), t, icon: '🚀', text: `${m.name} boosted ${fmtEUR2(amt)} at ${l.multiplier}x` }],
           }
         })
       }
