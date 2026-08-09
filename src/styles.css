@@ -661,6 +661,8 @@ input, select { font-family: inherit; }
   font-family: var(--font-display); font-weight: 800; font-size: 13px; white-space: nowrap;
 }
 .mult-chip.sm { padding: 3px 9px; font-size: 11.5px; }
+/* the chip keeps its own casing inside uppercase labels like the hero kicker */
+.hero-kicker .mult-chip, .quick-head .mult-chip { text-transform: none; letter-spacing: 0.2px; }
 
 .ready-pill {
   display: inline-flex; align-items: center; gap: 5px;

@@ -61,12 +61,12 @@ function QuickDrawCard({ q, onJoin }) {
     <div className="quick-card">
       <div className="quick-head">
         <span className="quick-name">Quick Draw</span>
+        <MultiplierChip x={q.multiplier} small />
         {q.joined > 0 && <span className="you-in-chip">✓ You're in{q.joined > 1 ? ` ×${q.joined}` : ''}</span>}
         <span className="quick-time">{time}</span>
       </div>
       <div className="quick-pot"><AnimatedNumber value={q.pot} format={v => fmtEUR2(v)} /> <span className="pot-suffix">pot</span></div>
       <div className="quick-meta"><AnimatedNumber value={q.crews} format={v => Math.round(v)} /> crews in · closes in <Countdown target={q.closesAt} small /></div>
-      <div style={{ marginTop: 8 }}><MultiplierChip x={q.multiplier} small /></div>
       <button className="btn btn-outline-gold btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={onJoin}>
         Join Lottery
       </button>
@@ -135,6 +135,7 @@ export default function Home() {
               <div className="hero-content">
                 <div className="hero-kicker" style={{ color: 'var(--money)' }}>
                   <span className="dot" /> Weekly Mega · {GAME.name} · Draw #214 · Tonight 21:00
+                  <MultiplierChip x={state.mega.multiplier} small />
                   {ongoing.length > 0 && <span className="you-in-chip">✓ You're in · {ongoing.length} crew{ongoing.length > 1 ? 's' : ''}</span>}
                 </div>
                 <div className="pot-label" style={{ marginTop: 10 }}>Current pot</div>
