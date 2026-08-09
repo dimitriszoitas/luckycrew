@@ -703,8 +703,7 @@ input, select { font-family: inherit; }
 .pay-amount { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 26px; color: var(--money); }
 .boost-block {
   margin-top: 12px; padding: 14px 16px; border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--cyan) 35%, transparent);
-  background: color-mix(in srgb, var(--cyan) 7%, transparent);
+  border: 1px solid var(--border); background: var(--surface-2);
 }
 .boost-payout { margin-top: 12px; font-size: 13.5px; color: var(--text-dim); text-align: center; line-height: 1.6; }
 .boost-payout b { color: var(--cyan); font-family: var(--font-display); font-size: 16px; }
@@ -1225,6 +1224,140 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .nav-link[aria-current='page'] { color: var(--text); }
 
 .doc-lead { color: var(--text-dim); margin: 0 0 22px; }
+
+/* ── Exercise Details: presentation layout ──────────────────────────────── */
+
+/* the tab row stays put while a panel scrolls under it */
+.pres-tabs {
+  position: sticky; top: 66px; z-index: 5;
+  padding: 12px 0 16px; margin-bottom: 4px; background: var(--bg);
+  box-shadow: 0 10px 14px -12px rgba(0, 0, 0, 0.65);
+}
+:root[data-theme='light'] .pres-tabs { box-shadow: 0 10px 14px -12px rgba(9, 50, 70, 0.28); }
+.pres-panel { animation: fadeUp .2s ease-out; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
+.pres-head { margin-bottom: 28px; }
+.pres-head h2 { font-size: 24px; margin-bottom: 8px; }
+.pres-head p { color: var(--text-dim); font-size: 15px; line-height: 1.75; max-width: 68ch; }
+.pres-block { margin-bottom: 40px; }
+.pres-block:last-child { margin-bottom: 0; }
+.pres-block > h3 {
+  font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 18px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.pres-panel > .pres-grid, .pres-panel > .dir-grid, .pres-panel > .brief-quote { margin-bottom: 40px; }
+.pres-panel > .pres-note { margin-bottom: 40px; }
+.pres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 16px; }
+.pres-grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.pres-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px 20px; }
+.pres-card h4 { font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
+.pres-card p, .pres-card li { color: var(--text-dim); font-size: 13.5px; line-height: 1.7; }
+.pres-card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.pres-card b { color: var(--text); }
+.pres-num {
+  font-family: var(--font-display); font-weight: 800; font-size: 13px;
+  width: 26px; height: 26px; border-radius: 8px; display: inline-grid; place-items: center;
+  background: var(--surface-3); color: var(--gold); margin-bottom: 8px;
+}
+:root[data-theme='light'] .pres-num { color: var(--money); }
+
+/* bullet list that reads as slide content */
+.pres-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; max-width: 76ch; }
+.pres-list li { position: relative; padding-left: 20px; color: var(--text-dim); font-size: 14.5px; line-height: 1.7; }
+.pres-list li::before { content: ''; position: absolute; left: 3px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+:root[data-theme='light'] .pres-list li::before { color: var(--money); }
+.pres-list b { color: var(--text); }
+
+/* requirement checklist with a met/how mapping */
+.req { display: grid; gap: 10px; }
+.req-row {
+  display: grid; grid-template-columns: 22px 1fr; gap: 14px; align-items: start;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px;
+}
+.req-tick {
+  width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center;
+  background: var(--money-dim); color: var(--money); font-size: 12px; font-weight: 800;
+}
+.req-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.req-how { color: var(--text-dim); font-size: 13.5px; line-height: 1.7; max-width: 76ch; }
+.req-how b { color: var(--text); }
+
+/* the callout that frames a decision */
+.pres-note {
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-2); padding: 16px 18px; margin-bottom: 16px;
+}
+.pres-note p { color: var(--text-dim); font-size: 14.5px; line-height: 1.8; max-width: 76ch; }
+.pres-note b { color: var(--text); }
+
+/* ── Flow diagrams: labelled boxes joined by arrows ─────────────────────── */
+
+.flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; }
+.flow-node {
+  flex: 1 1 148px; min-width: 148px;
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  border-radius: 12px; padding: 14px 15px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.flow-node.on {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 7%, var(--surface-2));
+}
+:root[data-theme='light'] .flow-node.on { border-color: var(--money); background: rgba(14, 86, 115, 0.05); }
+.flow-step {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.flow-title { font-size: 14px; font-weight: 700; line-height: 1.35; }
+.flow-text { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+.flow-arrow {
+  flex: 0 0 24px; display: grid; place-items: center;
+  color: var(--text-faint); font-size: 18px; line-height: 1;
+}
+
+/* lifecycle track */
+.track { display: flex; flex-wrap: wrap; gap: 0; align-items: flex-start; }
+.track-step { flex: 1 1 124px; min-width: 124px; }
+.track-pill {
+  border-radius: 999px; padding: 7px 12px; text-align: center;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.4px;
+  background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-dim);
+}
+.track-step.key .track-pill { background: var(--money-dim); border-color: color-mix(in srgb, var(--money) 45%, transparent); color: var(--money); }
+.track-note { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; margin-top: 9px; padding: 0 2px; }
+
+/* two-lane money schematic */
+.lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .lanes { grid-template-columns: 1fr; } }
+.lane { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; background: var(--surface-2); }
+.lane-tag { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.lane.share .lane-tag { color: var(--money); }
+.lane.boost .lane-tag { color: var(--cyan); }
+.lane-flow { display: grid; gap: 6px; margin-top: 10px; }
+.lane-flow span { font-size: 12.5px; color: var(--text-dim); display: flex; gap: 8px; align-items: baseline; }
+.lane-flow span::before { content: '↓'; color: var(--text-faint); font-size: 11px; }
+.lane-flow span:first-child::before { content: '•'; }
+
+/* design direction cards + screenshots */
+@media (max-width: 1000px) {
+  .flow, .track { flex-direction: column; align-items: stretch; }
+  /* in a column, flex-basis would become the height: let content size the box */
+  .flow-node, .track-step { flex: 0 0 auto; min-width: 0; width: 100%; }
+  .flow-arrow { transform: rotate(90deg); padding: 4px 0; flex: 0 0 auto; }
+  .track-note { margin-bottom: 2px; }
+}
+
+.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .dir-grid { grid-template-columns: 1fr; } }
+.shot {
+  border: 1px solid var(--border-strong); border-radius: 12px; overflow: hidden;
+  background: var(--surface-2); display: block; width: 100%;
+}
+.shot img { display: block; width: 100%; height: auto; }
+.shot-cap { font-size: 12px; color: var(--text-dim); padding: 9px 12px; border-top: 1px solid var(--border); }
+.swatches { display: flex; gap: 6px; margin: 10px 0; }
+.swatches i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border-strong); }
 .doc-section { margin-bottom: 18px; }
 .doc-section h3 { font-size: 16px; margin: 18px 0 8px; }
 .doc-section h3:first-of-type { margin-top: 6px; }
@@ -1234,11 +1367,11 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 
 /* Verbatim source material (the brief as received), set apart from commentary */
 .brief-quote {
-  margin: 14px 0 4px; padding: 16px 18px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  border-left: 3px solid var(--gold); border-radius: 12px;
+  margin: 14px 0 4px; padding: 18px 20px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
 }
-.brief-quote h3 { font-size: 17px; margin: 0 0 14px; }
+.brief-quote h3 { font-size: 17px; margin: 0 0 16px; }
+.brief-quote p { color: var(--text-dim); font-size: 14.5px; line-height: 1.75; margin-bottom: 12px; max-width: 78ch; }
 .brief-kicker {
   display: inline-block; margin-bottom: 12px; padding: 3px 9px;
   background: var(--gold); color: #16162e; border-radius: 6px;
@@ -1246,9 +1379,9 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
   letter-spacing: 0.6px; text-transform: uppercase;
 }
 :root[data-theme='light'] .brief-kicker { background: var(--money); color: #ffffff; }
-.brief-quote .brief-label { color: var(--text); font-weight: 700; margin-bottom: 2px; }
+.brief-quote .brief-label { color: var(--text); font-weight: 700; margin: 18px 0 4px; }
+.brief-quote .brief-label:first-of-type { margin-top: 0; }
 .brief-quote p:last-child { margin-bottom: 0; }
-:root[data-theme='light'] .brief-quote { border-left-color: var(--money); }
 
 /* ── Accessibility panel + modes ── */
 .a11y-row {

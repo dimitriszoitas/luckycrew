@@ -76,13 +76,6 @@ export function Header() {
         >
           Exercise Details
         </button>
-        <button
-          className="nav-link hide-mobile"
-          aria-current={state.route.name === 'process' ? 'page' : undefined}
-          onClick={() => nav(dispatch, { name: 'process' })}
-        >
-          Design Process
-        </button>
         <div className="spacer" />
         <button className="wallet-chip" onClick={() => nav(dispatch, { name: 'wallet' })} aria-label={`Wallet, balance ${fmtEUR2(state.wallet.balance)}`}>
           <AnimatedNumber value={state.wallet.balance} format={v => fmtEUR2(v)} />
@@ -108,9 +101,6 @@ export function Header() {
               </div>
               <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'exercise' }) }}>
                 Exercise Details
-              </button>
-              <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); nav(dispatch, { name: 'process' }) }}>
-                Design Process
               </button>
               <button role="menuitem" className="mobile-only" onClick={() => { setShowMenu(false); setShowA11y(true) }}>
                 Accessibility

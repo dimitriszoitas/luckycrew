@@ -332,7 +332,9 @@ function seedLotteries(crews) {
 const seededCrews = seedCrews()
 
 const initialState = {
-  theme: 'dark',
+  // ?theme=light opens straight into the corporate direction, which makes the
+  // two design directions shareable as links and screenshottable side by side
+  theme: new URLSearchParams(window.location.search).get('theme') === 'light' ? 'light' : 'dark',
   route: { name: 'home' },
   wallet: {
     balance: 1500,
