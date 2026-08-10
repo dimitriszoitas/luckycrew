@@ -4,7 +4,16 @@ import { GAME, fmtEUR, fmtEUR2 } from '../game.js'
 import { SizeLadder } from '../ui.jsx'
 
 // ── Flow diagram ─────────────────────────────────────────────────────────────
-// Labelled boxes joined by arrows: the step, what the user sees, in their order.
+// Numbered nodes joined by drawn connectors: the step, what the user sees.
+
+const Connector = () => (
+  <div className="flow-link" aria-hidden="true">
+    <svg width="34" height="10" viewBox="0 0 34 10" fill="none">
+      <path d="M0 5 H24" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" strokeLinecap="round" />
+      <path d="M23 1 L31 5 L23 9 Z" fill="currentColor" />
+    </svg>
+  </div>
+)
 
 function Flow({ steps }) {
   return (
@@ -12,35 +21,34 @@ function Flow({ steps }) {
       {steps.map((s, i) => (
         <React.Fragment key={s.title}>
           <div className={`flow-node ${s.on ? 'on' : ''}`}>
-            <span className="flow-step">Step {i + 1}</span>
+            <span className="flow-num" aria-hidden="true">{i + 1}</span>
             <span className="flow-title">{s.title}</span>
             <span className="flow-text">{s.text}</span>
           </div>
-          {i < steps.length - 1 && <div className="flow-arrow" aria-hidden="true">→</div>}
+          {i < steps.length - 1 && <Connector />}
         </React.Fragment>
       ))}
     </div>
   )
 }
 
+// The entry lifecycle, as a timeline: a dot per state on a single line.
 function Track({ steps }) {
   return (
     <div className="track">
       {steps.map((s, i) => (
-        <React.Fragment key={s.name}>
-          <div className={`track-step ${s.key ? 'key' : ''}`}>
-            <div className="track-pill">{s.name}</div>
-            <div className="track-note">{s.note}</div>
-          </div>
-          {i < steps.length - 1 && <div className="flow-arrow" aria-hidden="true">→</div>}
-        </React.Fragment>
+        <div className={`track-step ${s.key ? 'key' : ''} ${i === steps.length - 1 ? 'last' : ''}`} key={s.name}>
+          <span className="track-dot" aria-hidden="true" />
+          <div className="track-name">{s.name}</div>
+          <div className="track-note">{s.note}</div>
+        </div>
       ))}
     </div>
   )
 }
 
-const Block = ({ title, children }) => (
-  <div className="pres-block">
+const Block = ({ title, big, children }) => (
+  <div className={`pres-block ${big ? 'big' : ''}`}>
     {title && <h3>{title}</h3>}
     {children}
   </div>
@@ -267,7 +275,7 @@ function Flows() {
         <p>Four paths carry the whole product. Each is built to ask one question per screen.</p>
       </div>
 
-      <Block title="1 · Join a lottery">
+      <Block title="1 · Join a lottery" big>
         <Flow
           steps={[
             { title: 'Pick a draw', text: 'The Mega hero or one of the Quick Draw cards. The multiplier is on both.' },
@@ -284,7 +292,7 @@ function Flows() {
         </ul>
       </Block>
 
-      <Block title="2 · Start a crew and fill the seats">
+      <Block title="2 · Start a crew and fill the seats" big>
         <Flow
           steps={[
             { title: 'Give it an identity', text: 'Name, mascot, vibe and privacy on one screen.' },
@@ -301,7 +309,7 @@ function Flows() {
         </ul>
       </Block>
 
-      <Block title="3 · The entry lifecycle">
+      <Block title="3 · The entry lifecycle" big>
         <Track
           steps={[
             { name: 'Open', note: 'Members pay their equal share. Adding tickets raises it for everyone.' },
@@ -486,7 +494,7 @@ export default function ExerciseDetails() {
   return (
     <div className="container doc" style={{ maxWidth: 1040 }}>
       <button className="back-link" onClick={() => nav(dispatch, { name: 'home' })}>← Home</button>
-      <h1 style={{ fontSize: 32, margin: '6px 0 6px' }}>Exercise Details</h1>
+      <h1 style={{ fontSize: 37, margin: '6px 0 8px' }}>Exercise Details</h1>
       <p className="doc-lead">
         The brief, how I worked through it, the concept it produced, and the decisions behind it.
       </p>

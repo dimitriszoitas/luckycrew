@@ -1223,11 +1223,12 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .nav-link:hover { color: var(--text); background: var(--surface-2); }
 .nav-link[aria-current='page'] { color: var(--text); }
 
-.doc-lead { color: var(--text-dim); margin: 0 0 22px; }
+.doc-lead { color: var(--text-dim); margin: 0 0 22px; font-size: 17px; line-height: 1.6; }
 
 /* ── Exercise Details: presentation layout ──────────────────────────────── */
 
 /* the tab row stays put while a panel scrolls under it */
+.pres-tabs .tab { font-size: 16.5px; }
 .pres-tabs {
   position: sticky; top: 66px; z-index: 5;
   padding: 12px 0 16px; margin-bottom: 4px; background: var(--bg);
@@ -1237,14 +1238,18 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .pres-panel { animation: fadeUp .2s ease-out; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
 .pres-head { margin-bottom: 28px; }
-.pres-head h2 { font-size: 24px; margin-bottom: 8px; }
-.pres-head p { color: var(--text-dim); font-size: 15px; line-height: 1.75; max-width: 68ch; }
+.pres-head h2 { font-size: 28px; margin-bottom: 10px; }
+.pres-head p { color: var(--text-dim); font-size: 17px; line-height: 1.7; }
 .pres-block { margin-bottom: 40px; }
 .pres-block:last-child { margin-bottom: 0; }
 .pres-block > h3 {
-  font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+  font-size: 13.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--text-faint); margin-bottom: 18px;
   padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.pres-block.big > h3 {
+  font-size: 19px; font-weight: 800; letter-spacing: 0; text-transform: none;
+  color: var(--text); padding-bottom: 14px;
 }
 .pres-panel > .pres-grid, .pres-panel > .dir-grid, .pres-panel > .brief-quote,
 .pres-panel > .stages { margin-bottom: 40px; }
@@ -1253,41 +1258,41 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .stages { display: grid; gap: 12px; }
 .stage { display: grid; grid-template-columns: 30px 1fr; gap: 16px; align-items: start; }
 .stage .pres-num { margin-bottom: 0; }
-.stage p { max-width: 74ch; }
+
 .pres-panel > .pres-note { margin-bottom: 40px; }
 .pres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 16px; }
 .pres-grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 .pres-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px 20px; }
-.pres-card h4 { font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
-.pres-card p, .pres-card li { color: var(--text-dim); font-size: 13.5px; line-height: 1.7; }
+.pres-card h4 { font-size: 17px; margin-bottom: 9px; line-height: 1.4; }
+.pres-card p, .pres-card li { color: var(--text-dim); font-size: 15.5px; line-height: 1.7; }
 .pres-card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .pres-card b { color: var(--text); }
 .pres-num {
-  font-family: var(--font-display); font-weight: 800; font-size: 13px;
-  width: 26px; height: 26px; border-radius: 8px; display: inline-grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 15px;
+  width: 30px; height: 30px; border-radius: 8px; display: inline-grid; place-items: center;
   background: var(--surface-3); color: var(--gold); margin-bottom: 8px;
 }
 :root[data-theme='light'] .pres-num { color: var(--money); }
 
 /* bullet list that reads as slide content */
-.pres-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; max-width: 76ch; }
-.pres-list li { position: relative; padding-left: 20px; color: var(--text-dim); font-size: 14.5px; line-height: 1.7; }
-.pres-list li::before { content: ''; position: absolute; left: 3px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.pres-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.pres-list li { position: relative; padding-left: 22px; color: var(--text-dim); font-size: 16.5px; line-height: 1.7; }
+.pres-list li::before { content: ''; position: absolute; left: 3px; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
 :root[data-theme='light'] .pres-list li::before { color: var(--money); }
 .pres-list b { color: var(--text); }
 
 /* requirement checklist with a met/how mapping */
 .req { display: grid; gap: 10px; }
 .req-row {
-  display: grid; grid-template-columns: 22px 1fr; gap: 14px; align-items: start;
+  display: grid; grid-template-columns: 25px 1fr; gap: 14px; align-items: start;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px;
 }
 .req-tick {
-  width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center;
-  background: var(--money-dim); color: var(--money); font-size: 12px; font-weight: 800;
+  width: 25px; height: 25px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--money-dim); color: var(--money); font-size: 13.5px; font-weight: 800;
 }
-.req-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-.req-how { color: var(--text-dim); font-size: 13.5px; line-height: 1.7; max-width: 76ch; }
+.req-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.req-how { color: var(--text-dim); font-size: 15.5px; line-height: 1.7; }
 .req-how b { color: var(--text); }
 
 /* the callout that frames a decision */
@@ -1295,66 +1300,88 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
   border: 1px solid var(--border); border-radius: 12px;
   background: var(--surface-2); padding: 16px 18px; margin-bottom: 16px;
 }
-.pres-note p { color: var(--text-dim); font-size: 14.5px; line-height: 1.8; max-width: 76ch; }
+.pres-note p { color: var(--text-dim); font-size: 16.5px; line-height: 1.8; }
 .pres-note b { color: var(--text); }
 
-/* ── Flow diagrams: labelled boxes joined by arrows ─────────────────────── */
+/* ── Flow diagrams: numbered nodes joined by drawn connectors ───────────── */
 
-.flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; }
+.flow { display: flex; align-items: stretch; gap: 0; }
 .flow-node {
-  flex: 1 1 148px; min-width: 148px;
-  background: var(--surface-2); border: 1px solid var(--border-strong);
-  border-radius: 12px; padding: 14px 15px;
-  display: flex; flex-direction: column; gap: 6px;
+  position: relative;
+  flex: 1 1 152px; min-width: 152px;
+  background: linear-gradient(180deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 70%, var(--surface)));
+  border: 1px solid var(--border-strong);
+  border-radius: 14px; padding: 26px 16px 16px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+/* the step number sits on the top edge, so the row reads as a sequence */
+.flow-num {
+  position: absolute; top: -14px; left: 15px;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 14px;
+  background: var(--surface-3); border: 1px solid var(--border-strong); color: var(--text-dim);
 }
 .flow-node.on {
   border-color: color-mix(in srgb, var(--gold) 55%, transparent);
-  background: color-mix(in srgb, var(--gold) 7%, var(--surface-2));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 10%, var(--surface-2)), var(--surface-2));
 }
-:root[data-theme='light'] .flow-node.on { border-color: var(--money); background: rgba(14, 86, 115, 0.05); }
-.flow-step {
-  font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text-faint);
-}
-.flow-title { font-size: 14px; font-weight: 700; line-height: 1.35; }
-.flow-text { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
-.flow-arrow {
-  flex: 0 0 24px; display: grid; place-items: center;
-  color: var(--text-faint); font-size: 18px; line-height: 1;
-}
+.flow-node.on .flow-num { background: var(--gold); border-color: var(--gold); color: #16162e; }
+:root[data-theme='light'] .flow-node.on { border-color: var(--money); background: linear-gradient(180deg, rgba(14, 86, 115, 0.08), #ffffff); }
+:root[data-theme='light'] .flow-node.on .flow-num { background: var(--money); border-color: var(--money); color: #ffffff; }
+.flow-title { font-size: 16px; font-weight: 700; line-height: 1.35; }
+.flow-text { font-size: 14.5px; color: var(--text-dim); line-height: 1.55; }
+.flow-link { flex: 0 0 34px; display: grid; place-items: center; color: var(--text-faint); }
 
-/* lifecycle track */
-.track { display: flex; flex-wrap: wrap; gap: 0; align-items: flex-start; }
-.track-step { flex: 1 1 124px; min-width: 124px; }
-.track-pill {
-  border-radius: 999px; padding: 7px 12px; text-align: center;
-  font-size: 12px; font-weight: 800; letter-spacing: 0.4px;
-  background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-dim);
+/* lifecycle timeline: one dot per state, on a single continuous line */
+.track { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.track-step { position: relative; padding: 26px 14px 0 0; }
+.track-step::before {
+  content: ''; position: absolute; top: 6px; left: 7px; right: 0; height: 2px;
+  background: var(--border-strong);
 }
-.track-step.key .track-pill { background: var(--money-dim); border-color: color-mix(in srgb, var(--money) 45%, transparent); color: var(--money); }
-.track-note { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; margin-top: 9px; padding: 0 2px; }
+.track-step.last::before { display: none; }
+.track-dot {
+  position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--border-strong);
+}
+.track-step.key .track-dot {
+  background: var(--gold); border-color: var(--gold);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+:root[data-theme='light'] .track-step.key .track-dot {
+  background: var(--money); border-color: var(--money);
+  box-shadow: 0 0 0 4px rgba(14, 86, 115, 0.16);
+}
+.track-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.track-step.key .track-name { color: var(--gold); }
+:root[data-theme='light'] .track-step.key .track-name { color: var(--money); }
+.track-note { font-size: 14px; color: var(--text-dim); line-height: 1.55; }
+
+@media (max-width: 1000px) {
+  .flow { flex-direction: column; align-items: stretch; }
+  .flow-node { flex: 0 0 auto; min-width: 0; width: 100%; margin-top: 8px; }
+  .flow-link { flex: 0 0 auto; padding: 8px 0; transform: rotate(90deg); }
+  .track { grid-auto-flow: row; grid-auto-columns: auto; gap: 4px; }
+  .track-step { padding: 0 0 0 26px; }
+  .track-step::before { top: 7px; bottom: -4px; left: 6px; right: auto; width: 2px; height: auto; }
+  .track-dot { top: 0; left: 0; }
+  .track-name { margin-bottom: 3px; }
+}
 
 /* two-lane money schematic */
 .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 640px) { .lanes { grid-template-columns: 1fr; } }
 .lane { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; background: var(--surface-2); }
-.lane-tag { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.lane-tag { font-size: 12.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
 .lane.share .lane-tag { color: var(--money); }
 .lane.boost .lane-tag { color: var(--cyan); }
 .lane-flow { display: grid; gap: 6px; margin-top: 10px; }
-.lane-flow span { font-size: 12.5px; color: var(--text-dim); display: flex; gap: 8px; align-items: baseline; }
+.lane-flow span { font-size: 14.5px; color: var(--text-dim); display: flex; gap: 8px; align-items: baseline; }
 .lane-flow span::before { content: '↓'; color: var(--text-faint); font-size: 11px; }
 .lane-flow span:first-child::before { content: '•'; }
 
 /* design direction cards + screenshots */
-@media (max-width: 1000px) {
-  .flow, .track { flex-direction: column; align-items: stretch; }
-  /* in a column, flex-basis would become the height: let content size the box */
-  .flow-node, .track-step { flex: 0 0 auto; min-width: 0; width: 100%; }
-  .flow-arrow { transform: rotate(90deg); padding: 4px 0; flex: 0 0 auto; }
-  .track-note { margin-bottom: 2px; }
-}
-
 .dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 720px) { .dir-grid { grid-template-columns: 1fr; } }
 .shot {
@@ -1362,7 +1389,7 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
   background: var(--surface-2); display: block; width: 100%;
 }
 .shot img { display: block; width: 100%; height: auto; }
-.shot-cap { font-size: 12px; color: var(--text-dim); padding: 9px 12px; border-top: 1px solid var(--border); }
+.shot-cap { font-size: 13.5px; color: var(--text-dim); padding: 10px 14px; border-top: 1px solid var(--border); }
 .swatches { display: flex; gap: 6px; margin: 10px 0; }
 .swatches i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border-strong); }
 .doc-section { margin-bottom: 18px; }
@@ -1375,12 +1402,12 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 /* Verbatim source material (the brief as received), set apart from commentary */
 /* the brief reads as the page's own opening, not as a boxed aside */
 .brief-quote { margin: 0 0 4px; }
-.brief-quote h3 { font-size: 17px; margin: 0 0 16px; }
-.brief-quote p { color: var(--text-dim); font-size: 14.5px; line-height: 1.75; margin-bottom: 12px; max-width: 78ch; }
+.brief-quote h3 { font-size: 19.5px; margin: 0 0 18px; }
+.brief-quote p { color: var(--text-dim); font-size: 16.5px; line-height: 1.75; margin-bottom: 14px; }
 .brief-kicker {
   display: inline-block; margin-bottom: 12px; padding: 3px 9px;
   background: var(--gold); color: #16162e; border-radius: 6px;
-  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  font-family: var(--font-display); font-weight: 800; font-size: 13.5px;
   letter-spacing: 0.6px; text-transform: uppercase;
 }
 :root[data-theme='light'] .brief-kicker { background: var(--money); color: #ffffff; }
