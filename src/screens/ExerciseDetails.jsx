@@ -65,11 +65,6 @@ const ReqList = ({ items }) => (
 function Brief() {
   return (
     <div className="pres-panel">
-      <div className="pres-head">
-        <h2>The assignment, exactly as it arrived</h2>
-        <p>Reproduced verbatim, followed by the requirements I read out of it and treated as the minimum bar.</p>
-      </div>
-
       <blockquote className="brief-quote">
         <div className="brief-kicker">Design Exercise</div>
         <h3 style={{ marginTop: 0 }}>Group Play for a Lottery Platform</h3>
@@ -151,12 +146,14 @@ function Approach() {
         <p>Four stages, each one narrowing the problem. The tool changed when the question changed.</p>
       </div>
 
-      <div className="pres-grid two">
+      <div className="stages">
         {stages.map(s => (
-          <div className="pres-card" key={s.n}>
+          <div className="pres-card stage" key={s.n}>
             <span className="pres-num">{s.n}</span>
-            <h4>{s.title}</h4>
-            <p>{s.body}</p>
+            <div>
+              <h4>{s.title}</h4>
+              <p>{s.body}</p>
+            </div>
           </div>
         ))}
       </div>

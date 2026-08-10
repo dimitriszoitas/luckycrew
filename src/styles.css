@@ -1246,7 +1246,14 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
   color: var(--text-faint); margin-bottom: 18px;
   padding-bottom: 12px; border-bottom: 1px solid var(--border);
 }
-.pres-panel > .pres-grid, .pres-panel > .dir-grid, .pres-panel > .brief-quote { margin-bottom: 40px; }
+.pres-panel > .pres-grid, .pres-panel > .dir-grid, .pres-panel > .brief-quote,
+.pres-panel > .stages { margin-bottom: 40px; }
+
+/* sequential stages read top to bottom, number on the left */
+.stages { display: grid; gap: 12px; }
+.stage { display: grid; grid-template-columns: 30px 1fr; gap: 16px; align-items: start; }
+.stage .pres-num { margin-bottom: 0; }
+.stage p { max-width: 74ch; }
 .pres-panel > .pres-note { margin-bottom: 40px; }
 .pres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 16px; }
 .pres-grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
@@ -1366,10 +1373,8 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .doc-section ul { margin: 0 0 12px; padding-left: 20px; color: var(--text-dim); line-height: 1.85; font-size: 14.5px; }
 
 /* Verbatim source material (the brief as received), set apart from commentary */
-.brief-quote {
-  margin: 14px 0 4px; padding: 18px 20px;
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
-}
+/* the brief reads as the page's own opening, not as a boxed aside */
+.brief-quote { margin: 0 0 4px; }
 .brief-quote h3 { font-size: 17px; margin: 0 0 16px; }
 .brief-quote p { color: var(--text-dim); font-size: 14.5px; line-height: 1.75; margin-bottom: 12px; max-width: 78ch; }
 .brief-kicker {
