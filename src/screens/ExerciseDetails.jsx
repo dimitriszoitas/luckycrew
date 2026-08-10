@@ -15,8 +15,9 @@ const Connector = () => (
   </div>
 )
 
-function Flow({ steps }) {
+function Flow({ steps, legend }) {
   return (
+    <>
     <div className="flow">
       {steps.map((s, i) => (
         <React.Fragment key={s.title}>
@@ -29,12 +30,15 @@ function Flow({ steps }) {
         </React.Fragment>
       ))}
     </div>
+    {legend && <p className="flow-legend">{legend}</p>}
+    </>
   )
 }
 
 // The entry lifecycle, as a timeline: a dot per state on a single line.
-function Track({ steps }) {
+function Track({ steps, legend }) {
   return (
+    <>
     <div className="track">
       {steps.map((s, i) => (
         <div className={`track-step ${s.key ? 'key' : ''} ${i === steps.length - 1 ? 'last' : ''}`} key={s.name}>
@@ -44,6 +48,8 @@ function Track({ steps }) {
         </div>
       ))}
     </div>
+    {legend && <p className="flow-legend">{legend}</p>}
+    </>
   )
 }
 
@@ -284,6 +290,7 @@ function Flows() {
             { title: 'Your share and boost', text: 'The mandatory share is fixed. The optional boost is the only number you can move.' },
             { title: 'You are in', text: 'Lands on the crew entry with readiness, tickets and the ledger updated.' },
           ]}
+          legend="Gold marks the pivotal step. Here it is step 3: the price does not exist until you pick the crew, so that is the step everything else waits on."
         />
         <ul className="pres-list" style={{ marginTop: 12 }}>
           <li>The draw stays pinned as a hero across all three steps, so you never lose track of what you are buying into.</li>
@@ -301,6 +308,7 @@ function Flows() {
             { title: 'Invite your people', text: 'Share link, six letter code or QR, with a preview of what they will see.' },
             { title: 'The ticket grows', text: 'Every open entry gains a number the moment someone joins, on the ledger.', on: true },
           ]}
+          legend="Gold marks the two steps where crew size does the work: choosing how many of you will play, and the ticket growing when they arrive."
         />
         <ul className="pres-list" style={{ marginTop: 12 }}>
           <li>The size explainer sits inside the create flow, at the exact moment you decide how many people to invite.</li>
@@ -319,6 +327,7 @@ function Flows() {
             { name: 'Settled', key: true, note: 'Equal split to the cent, boosts on top where the tier allows.' },
             { name: 'Wallet', note: 'Every cut lands instantly, with a matching ledger line.' },
           ]}
+          legend="Gold marks the two states that make this a group product rather than a single ticket: everyone paid, and everyone paid out."
         />
         <ul className="pres-list" style={{ marginTop: 12 }}>
           <li>Readiness is the state the first model was missing: a group product needs to show who is holding it up.</li>

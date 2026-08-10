@@ -1333,6 +1333,18 @@ table.split .amt { font-family: var(--font-display); font-weight: 700; color: va
 .flow-text { font-size: 14.5px; color: var(--text-dim); line-height: 1.55; }
 .flow-link { flex: 0 0 34px; display: grid; place-items: center; color: var(--text-faint); }
 
+/* says out loud what the gold emphasis means */
+.flow-legend {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--border);
+  font-size: 13.5px; line-height: 1.6; color: var(--text-faint);
+}
+.flow-legend::before {
+  content: ''; flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--gold); transform: translateY(3px);
+}
+:root[data-theme='light'] .flow-legend::before { background: var(--money); }
+
 /* lifecycle timeline: one dot per state, on a single continuous line */
 .track { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .track-step { position: relative; padding: 26px 14px 0 0; }
